@@ -1795,7 +1795,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.2 · 每个账号独立 · 数据留在这台电脑上", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.3 · 云同步 · 数据留在这台电脑上", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }
@@ -2282,7 +2282,8 @@ public partial class MainWindow : Window
         accountRow.Child = accountGrid;
         stack.Children.Add(accountRow);
 
-        var firstUrl = _server.Urls.Count > 0 ? _server.Urls[0].Url : _server.BaseUrl;
+        bool cloud = _server.CloudEnabled;
+        var firstUrl = cloud ? "Supabase 云同步" : (_server.Urls.Count > 0 ? _server.Urls[0].Url : _server.BaseUrl);
         var linkRow = new Border
         {
             Background = (Brush)FindResource("Paper2"),
@@ -2293,26 +2294,34 @@ public partial class MainWindow : Window
         var linkGrid = new Grid();
         linkGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         linkGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var link = Txt((firstUrl + "/").Replace("http://", ""), 10, "Ink2", new FontFamily("Georgia"));
+        var link = Txt(cloud ? firstUrl : (firstUrl + "/").Replace("http://", ""), 10, "Ink2", new FontFamily("Georgia"));
         link.TextTrimming = TextTrimming.CharacterEllipsis;
         linkGrid.Children.Add(link);
-        var copyLink = new Button { Content = "复制地址", Style = (Style)FindResource("SmallButton") };
+        var copyLink = new Button { Content = cloud ? "云同步" : "复制地址", Style = (Style)FindResource("SmallButton") };
+        copyLink.IsEnabled = !cloud;
         copyLink.Click += (_, _) => CopyText(firstUrl + "/", "地址已复制");
         Grid.SetColumn(copyLink, 1);
         linkGrid.Children.Add(copyLink);
         linkRow.Child = linkGrid;
         stack.Children.Add(linkRow);
 
-        foreach (var (name, url) in _server.Urls)
+        if (!cloud)
         {
-            var ip = new Grid { Margin = new Thickness(0, 1, 0, 1) };
-            ip.Children.Add(Txt(name, 9.5, "Muted"));
-            var ipText = Txt(url.Replace("http://", ""), 9.5, "Ink2", new FontFamily("Georgia"));
-            ipText.HorizontalAlignment = System.Windows.HorizontalAlignment.Right;
-            ip.Children.Add(ipText);
-            stack.Children.Add(ip);
+            foreach (var (name, url) in _server.Urls)
+            {
+                var ip = new Grid { Margin = new Thickness(0, 1, 0, 1) };
+                ip.Children.Add(Txt(name, 9.5, "Muted"));
+                var ipText = Txt(url.Replace("http://", ""), 9.5, "Ink2", new FontFamily("Georgia"));
+                ipText.HorizontalAlignment = System.Windows.HorizontalAlignment.Right;
+                ip.Children.Add(ipText);
+                stack.Children.Add(ip);
+            }
+            stack.Children.Add(Txt("手机和电脑连同一个 Wi-Fi，打开上面的地址，登录同一个账号和密码。账号之间的数据互相独立。", 9.5, "Muted", null, null, 0, 4, true));
         }
-        stack.Children.Add(Txt("手机和电脑连同一个 Wi-Fi，打开上面的地址，登录同一个账号和密码。账号之间的数据互相独立。", 9.5, "Muted", null, null, 0, 4, true));
+        else
+        {
+            stack.Children.Add(Txt("电脑和手机登录同一个账号即可同步，不需要同一 Wi-Fi，也不用填电脑地址。", 9.5, "Muted", null, null, 0, 4, true));
+        }
         return stack;
     }
 

@@ -455,9 +455,14 @@ function renderSync() {
   els.accountName.textContent = api.accountName || "已登录";
   const urls = (boot && boot.urls) || [];
   const link = (urls[0] && urls[0].url) || location.origin;
-  els.serverLink.textContent = link.replace(/^https?:\/\//, "");
+  els.serverLink.textContent = boot.cloud ? "Supabase 云同步" : link.replace(/^https?:\/\//, "");
 
-  if (urls.length) {
+  if (boot.cloud) {
+    els.addresses.innerHTML = '<div class="addr"><span>同步方式</span><b>云端账号 · 电脑/手机互通</b></div>';
+    els.pairNote.textContent = "电脑和手机登录同一个账号即可同步，不再需要同一个 Wi-Fi，也不用填电脑地址。";
+    const copy = document.getElementById("copyLink");
+    if (copy) copy.style.display = "none";
+  } else if (urls.length) {
     els.addresses.innerHTML = urls
       .map(
         (u) => `<div class="addr"><span>${escapeHtml(u.name || "局域网")}</span><b>${escapeHtml(u.url.replace(/^https?:\/\//, ""))}</b></div>`
@@ -471,7 +476,8 @@ function renderSync() {
 
   const status = document.createElement("div");
   status.className = "pair-status";
-  status.innerHTML = `<span class="dot ${S.connected ? "" : "offline"}"></span><span>${S.connected ? "正在和另一端同步" : "离线 · 稍后会自动重连"}</span>`;
+  const statusText = S.connected ? (boot.cloud ? "云端已连接" : "正在和另一端同步") : "离线 · 稍后会自动重连";
+  status.innerHTML = `<span class="dot ${S.connected ? "" : "offline"}"></span><span>${statusText}</span>`;
   const old = els.addresses.parentElement.querySelector(".pair-status");
   if (old) old.replaceWith(status);
   else els.addresses.parentElement.appendChild(status);

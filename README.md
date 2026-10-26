@@ -1,7 +1,7 @@
 # 墨墨 · 桌宠
 
 > 用你给的那张参考图做的 INFP 小女孩桌宠。
-> **Windows 原生桌面端 + Android 网页端共用账号：登录同一个账号，心情、投喂、运动、出游和陪伴时间实时互通。**
+> **Windows 原生桌面端 + 独立 Android App 共用云端账号：登录同一个账号，心情、投喂、运动、出游和陪伴时间实时互通，不再需要同一 Wi-Fi。**
 
 ![墨墨 · 桌宠](docs/images/hero.png)
 
@@ -31,12 +31,12 @@
 打包好的程序在：
 
 ```
-dist/MomoPet-Setup-1.2.0.exe        ← 给别的电脑装，带卸载器
+dist/MomoPet-Setup-1.3.0.exe        ← 给别的电脑装，带卸载器
 dist/MomoPet-Windows-Portable/      ← 免安装便携版
-dist/MomoPet-Android-1.2.0.apk      ← 安卓安装包
+dist/MomoPet-Android-1.3.0.apk      ← 安卓安装包
 ```
 
-Windows 用户推荐直接运行 `MomoPet-Setup-1.2.0.exe`，会安装到 `%LOCALAPPDATA%\Programs\MomoPet` 并创建桌面/开始菜单快捷方式。便携版则解压后：
+Windows 用户推荐直接运行 `MomoPet-Setup-1.3.0.exe`，会安装到 `%LOCALAPPDATA%\Programs\MomoPet` 并创建桌面/开始菜单快捷方式。便携版则解压后：
 
 - **推荐**：双击 `启动墨墨.cmd`。它会带上随包的 .NET 运行时，不要求电脑预装 .NET。
 - `启动墨墨.vbs` 是无窗口版；部分电脑禁用了 Windows Script Host，双击 VBS 会没反应——这时用 `启动墨墨.cmd` 就好。
@@ -51,7 +51,7 @@ Windows 用户推荐直接运行 `MomoPet-Setup-1.2.0.exe`，会安装到 `%LOCA
 
 如果 `启动墨墨.cmd` 打开后没有出现窗口，黑窗口会停住并显示原因；也可以直接双击 `MomoPet.exe`（需要系统已装 .NET 10），或把同目录的 `startup.log` 发给我。
 
-> 程序可以整个文件夹搬到别的目录；账号、密码、设置和记录默认保存在 **`%LOCALAPPDATA%\MomoPet\data`**，升级/替换程序文件夹不会丢。旧版放在程序旁的 `data\` 或 `desktop-settings.json` 会在第一次启动时自动迁移到新位置。若系统/杀毒软件连 LocalAppData 都禁止 Node 写入，程序会自动回退到程序旁的 `data\` 并在 `fallback.log` 记录（这种情况升级时请保留该文件夹）。
+> 账号、密码和宠物记录现在保存在 **Supabase 云端**；本地 `%LOCALAPPDATA%\MomoPet` 只保存登录 token、设置和离线缓存，升级/替换程序文件夹不会丢。旧版本地账号需要重新注册云账号。
 
 ### 桌面端操作
 
@@ -69,35 +69,27 @@ Windows 用户推荐直接运行 `MomoPet-Setup-1.2.0.exe`，会安装到 `%LOCA
 
 ## 账号与手机同步
 
-Android 端提供两种方式：
+Android 端是**独立的云 App**：安装后直接注册/登录，不再需要填电脑 IP，也不需要电脑和手机在同一 Wi-Fi。
 
-- **APK**：`dist/MomoPet-Android-1.2.0.apk`，安装后第一次填写电脑上显示的地址（如 `http://192.168.1.8:8787`），再登录账号。
-- **PWA**：手机 Chrome 打开同一个地址，添加到主屏幕。
+- **APK**：`dist/MomoPet-Android-1.3.0.apk`
+- **Windows**：`dist/MomoPet-Setup-1.3.0.exe` 或便携版
 
-两种方式共用同一套界面和账号，数据实时同步。
+### 第一次使用
 
-1. 电脑和手机连**同一个 Wi-Fi**。
-2. 第一次在电脑上打开墨墨时，创建账号（例如 `momo` / 自己的密码）。
-3. 电脑上右键墨墨 → `个人页面` → `账号与同步`，看到局域网地址，例如：
-   ```
-   http://192.168.1.8:8787/
-   ```
-4. 用手机 Chrome 打开这个地址，**登录同一个账号**（账号和密码要和电脑上一致）。如果还没有账号，也可以在手机上直接创建一个。
-
-   ![手机登录](docs/images/mobile-auth.png)
-
-5. 打开后建议：Chrome 右上角菜单 → **添加到主屏幕**，这样下次像 App 一样打开。
+1. Windows 打开墨墨，创建账号（用户名 + 密码）。
+2. 手机安装 APK，打开后直接登录**同一个账号**。
+3. 电脑和手机都联网即可，电脑关机后手机也能继续用。
 
 同步之后：
 
 - 手机上喂她一杯奶茶，电脑上的健康值/心情几秒内会变；
 - 电脑上带她运动或出门，手机上会看到倒计时和「挥汗如雨」；
 - 陪伴时间会把两台设备的时间合在一起算（不会重复计算）；
-- 关掉手机页面，她还在电脑上；电脑关掉，手机就连不上这间小屋。
+- 账号、心情、投喂、运动、出游、小屋背景都存在云端。
 
-> **每个账号的数据是独立的。** 同一个服务器上可以创建多个账号；退出账号后重新登录另一个账号，会进入另一间小屋。  
-> **限制**：这一版需要电脑开着、手机和电脑在同一网络；账号保存在 `%LOCALAPPDATA%\MomoPet\data`，没有云端同步。APK / 安装包说明见 [docs/ANDROID.md](docs/ANDROID.md)。  
-> PWA 完整安装（带离线缓存）需要 HTTPS 或 localhost；局域网 HTTP 下 Chrome 仍然可以「添加到主屏幕」，只是更像一个快捷方式。
+> **每个账号的数据是独立的。** 退出账号后重新登录另一个账号，会进入另一间小屋。
+> 云端只保存宠物状态和账号，不保存电脑文件；没有网络时会显示离线缓存，恢复网络后自动继续同步。
+> APK / 安装包说明见 [docs/ANDROID.md](docs/ANDROID.md)。
 
 ---
 
@@ -165,7 +157,7 @@ Android 端提供两种方式：
 - 最近投喂记录（带她的原话和健康变化）
 - 运动记录（含提前停下、健康/疲惫变化）
 - 出游手账（地点、时长、心情、路上遇到的小惊喜）
-- 账号与同步：当前账号、局域网地址、复制地址、退出账号
+- 账号与同步：当前账号、云同步状态、退出账号
 - 设置：声音、始终置顶、开机启动、回到右下角、重新开始
 
 主界面右上角的背景图标可以换小屋背景；手账里的陪伴日历可以左右滑动看之前的周，点「日历」能看到所有日子。
@@ -181,24 +173,24 @@ Android 端提供两种方式：
 ## 数据是怎么互通的
 
 ```
-┌──────────────────────┐        HTTP / SSE        ┌──────────────────────┐
-│  Windows 原生桌宠     │  ◄──────────────────►   │  Node 同步服务端      │
-│  WPF（透明置顶窗口）  │      每 4 秒轮询状态      │  零依赖，端口 8787     │
-└──────────────────────┘                          │  账号 + 每账号 JSON    │
-                                                  └──────────┬───────────┘
-┌──────────────────────┐        HTTP / SSE                   │
-│  Android Chrome PWA  │  ◄──────────────────────────────────┘
-│  同一套 web/ 界面     │        登录同一个账号
+┌──────────────────────┐        HTTPS / RPC        ┌──────────────────────┐
+│  Windows 原生桌宠     │  ◄────────────────────►   │  Supabase 云端        │
+│  WPF + 本地 Node 代理 │      账号 + 状态 JSON     │  账号 / 状态 / RLS    │
+└──────────────────────┘                           └──────────┬───────────┘
+                                                              │
+┌──────────────────────┐        HTTPS / RPC                   │
+│  Android 独立 APK     │  ◄──────────────────────────────────┘
+│  内置 web/ + 云客户端  │        登录同一个账号
 └──────────────────────┘
 ```
 
-- **账号**：用户名 + 密码注册；密码使用 `scrypt` 加盐哈希，账号文件里没有明文密码。登录后发一个随机 token，桌面端存在 `%LOCALAPPDATA%\MomoPet\desktop-settings.json`，手机存在 `localStorage`。
-- **数据隔离**：每个账号一个 `%LOCALAPPDATA%\MomoPet\data\states\<账号ID>.json`，心情/投喂/运动/出游/陪伴时间完全独立；SSE 只向该账号的客户端推送。
-- **服务端**：`server/server.js`，零第三方依赖。PC 端启动时自动拉起，数据固定保存在 `%LOCALAPPDATA%\MomoPet\data`；旧版程序旁的 `data\` 会自动迁移过来。
-- **PC 端**：`desktop-native/`，WPF 原生窗口 + 内置 Node 服务端 + 登录窗口。每 4 秒拉取一次状态，所以手机上的操作几秒内就能看到。
-- **手机端**：`web/` 同一套页面，SSE 实时推送，心跳每 15 秒。
+- **账号**：用户名 + 密码；云端使用 bcrypt 哈希，数据库里没有明文密码；登录后发随机 token，PC 存在 `%LOCALAPPDATA%\MomoPet\desktop-settings.json`，手机存在 `localStorage`。
+- **数据隔离**：每个账号一行 `public.momo_states`，心情/投喂/运动/出游/陪伴时间完全独立；所有访问都经过 `SECURITY DEFINER` RPC，表本身不直接暴露。
+- **云端**：Supabase Postgres + REST/RPC，PC 和手机都能直接访问；不再依赖局域网。
+- **PC 端**：WPF 原生窗口 + 本地 Node 代理，代理负责把账号/状态转发到云端；手机端断开电脑也能用。
+- **手机端**：APK 内置 `web/` 和 `shared/` 资源，直接调用 Supabase RPC；没有电脑服务端。
 - **陪伴时间**：服务端按心跳去重累计，两台设备同时开着也只算一份。
-- **所有心情/饱食度/健康/疲惫/投喂/运动/出游数值**都由服务端计算，客户端只负责表现，避免两头各算一套。
+- **所有心情/饱食度/健康/疲惫/投喂/运动/出游数值**都由共享引擎计算，客户端只负责表现，避免两头各算一套。
 
 ---
 
@@ -213,11 +205,13 @@ Android 端提供两种方式：
 │  ├─ ApiClient.cs              账号 token + HTTP + JSON 状态同步
 │  ├─ Assets/                   透明立绘、头像、图标
 │  └─ node/node.exe             随包 Node（MIT）
-├─ server/server.js             零依赖同步服务端（账号 + HTTP API + SSE + 静态站点）
+├─ server/server.js             本地代理（云账号 + HTTP API + SSE + 静态站点）
+├─ server/cloud.js              Supabase RPC 客户端
+├─ cloud/schema.sql             Supabase 账号/状态表与 RPC 初始化
 ├─ shared/
 │  ├─ content.js                全部台词、食物选项、运动/出游地点、手账文案
 │  └─ engine.js                 心情/饱食度/健康/疲惫/投喂/运动/出游/陪伴时间的纯逻辑
-├─ web/                         桌面浏览器与 Android PWA 共用的界面
+├─ web/                         桌面浏览器与 Android App 共用的界面
 │  ├─ index.html  css/  js/     桌宠、投喂、运动、出游、手账、账号登录
 │  └─ assets/                   透明立绘、头像、图标
 ├─ tools/
@@ -225,12 +219,12 @@ Android 端提供两种方式：
 │  ├─ build-native.ps1          重新发布 Windows 便携版
 │  └─ capture.mjs               Chrome 无头截图 / 交互回归
 ├─ docs/
-│  ├─ ANDROID.md                APK 安装、PWA 安装与打包说明
+│  ├─ ANDROID.md                独立 APK 安装与构建说明
 │  └─ images/                   README 截图
 ├─ dist/
 │  ├─ MomoPet-Windows-Portable/ 推荐：双击 启动墨墨.cmd
 │  ├─ MomoPet-Windows/          轻量版：需要 .NET 10 Desktop Runtime
-│  └─ ...                       数据在 %LOCALAPPDATA%\MomoPet\data（升级不丢）
+│  └─ ...                       本地只留 token/设置/离线缓存
 ├─ test/                        接口回归与环境检查
 └─ start-server.cmd             只启动服务端（给手机用，或开发调试）
 ```
@@ -296,9 +290,9 @@ node tools\capture.mjs profile
 
 ## 已知限制
 
-1. **Android APK 是轻量 WebView 壳**：它连接电脑上运行的墨墨服务端，不内置 Node/账号数据；电脑关机或不在同一 Wi-Fi 时无法使用。也可以继续用 PWA 方式。
-2. **同步依赖局域网**：PC 端内置服务端，手机需要和 PC 在同一 Wi-Fi；公网访问需要把 `server/` 单独部署到可访问的机器上。账号系统已经做了，但当前没有云端账号服务。
-3. **HTTP 下的 PWA**：Chrome 对局域网 HTTP 页面不提供完整安装/SW 能力；「添加到主屏幕」可用，但离线缓存需要 HTTPS 或 `localhost`。
+1. **云端同步需要联网**：APK 和 PC 都直连 Supabase；没有网络时会使用本地缓存，联网后自动同步。
+2. **账号只在云端**：换设备登录同一个账号即可；云端项目由 `cloud/schema.sql` 初始化，账号和宠物状态都在 Supabase。
+3. **旧本地账号不会自动变成云账号**：旧版是局域网本地账号，升级后需要重新注册一个云账号；旧宠物数据可以在后续版本做导入。
 4. **系统表情**：Windows 的 WPF 会把 emoji 渲染成单色线稿（这正是当前视觉的一部分）；不同 Windows 版本的字体略有差异。
 5. **桌面端只在 Windows 上测试**：WPF 窗口透明、置顶、穿透、托盘均按 Windows 10/11 实现。
 

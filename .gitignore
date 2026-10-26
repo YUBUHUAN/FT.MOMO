@@ -4,6 +4,7 @@ desktop-native/obj/
 desktop-native/node/
 dist/
 android/build/
+android/assets/
 android/keystore/
 tools/android-toolchain/
 .dotnet/

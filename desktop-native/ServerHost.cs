@@ -15,6 +15,7 @@ public sealed class ServerHost : IAsyncDisposable
     public IReadOnlyList<(string Name, string Url)> Urls { get; private init; } = Array.Empty<(string, string)>();
     public string DataDir { get; private init; } = "";
     public int Port { get; private init; }
+    public bool CloudEnabled { get; private init; }
 
     private Process? _process;
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(4) };
@@ -108,6 +109,8 @@ public sealed class ServerHost : IAsyncDisposable
         psi.Environment["MOMO_DATA"] = dataDir;
         psi.Environment["MOMO_WEB"] = Path.Combine(baseDir, "web");
         psi.Environment["MOMO_SHARED"] = Path.Combine(baseDir, "shared");
+        string cloudConfig = Path.Combine(baseDir, "cloud.json");
+        if (File.Exists(cloudConfig)) psi.Environment["MOMO_CLOUD"] = cloudConfig;
         psi.Environment.Remove("ELECTRON_RUN_AS_NODE");
 
         var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
@@ -137,7 +140,8 @@ public sealed class ServerHost : IAsyncDisposable
                 BaseUrl = baseUrl,
                 Port = port,
                 Urls = urls,
-                DataDir = dataDir
+                DataDir = dataDir,
+                CloudEnabled = boot["cloud"]?.GetValue<bool>() == true
             };
         }
         catch

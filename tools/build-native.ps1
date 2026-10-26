@@ -110,7 +110,7 @@ $readme = @"
 每个账号有独立的心情、饱食度、健康值、疲惫值、投喂 / 运动 / 出游记录。
 
 右键她 → 个人页面，可以看到健康值、疲惫值、今日陪伴、运动/出游记录、可切换的小屋背景（主界面右上角背景图标），以及“账号与同步”里的手机地址。
-手机与电脑连同一个 Wi-Fi，用手机浏览器打开这个地址，登录同一个账号和密码即可同步。
+现在使用云端同步：电脑和手机登录同一个账号即可，手机不用再连电脑的局域网。
 数据保存在 %LOCALAPPDATA%\MomoPet\data（accounts.json / sessions.json / states/），升级或替换程序文件夹不会丢；旧版数据会自动迁移
 "@
 Set-Content -Path (Join-Path $portable "使用说明.txt") -Value $readme -Encoding UTF8

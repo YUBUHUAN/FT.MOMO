@@ -12,6 +12,8 @@ const os = require("os");
 const crypto = require("crypto");
 const content = require("../shared/content.js");
 const engine = require("../shared/engine.js");
+const actions = require("../shared/actions.js");
+const { createCloudBackend, loadConfig, CloudError } = require("./cloud.js");
 
 const MAX_BODY = 64 * 1024;
 const SESSION_DAYS = 30;
@@ -271,7 +273,9 @@ function createServer(opts = {}) {
   const webDir = path.resolve(opts.webDir || path.join(__dirname, "..", "web"));
   const sharedDir = path.resolve(opts.sharedDir || path.join(__dirname, "..", "shared"));
   const dataDir = path.resolve(opts.dataDir || path.join(__dirname, "..", "data"));
-  const store = new AccountStore(dataDir);
+  const cloudConfig = opts.cloud || loadConfig(opts.cloudConfig);
+  const cloud = createCloudBackend(cloudConfig);
+  const store = cloud ? null : new AccountStore(dataDir);
   const streams = new Map(); // accountId -> Set(res)
   const loginFails = new Map();
   const startedAt = Date.now();
@@ -337,23 +341,56 @@ function createServer(opts = {}) {
   async function authenticate(req, url) {
     const token = tokenFrom(req, url);
     if (!token) return null;
+    if (cloud) {
+      try {
+        const out = await cloud.me(token);
+        if (!out || out.ok === false || !out.account) return null;
+        return { account: out.account, token };
+      } catch (_) {
+        return null;
+      }
+    }
     const account = await store.authToken(token);
     if (!account) return null;
     return { account, token };
+  }
+
+  function cloudFailure(res, err) {
+    if (err instanceof CloudError) {
+      const status = err.status === 401 ? 401 : 503;
+      return send(res, status, { ok: false, error: status === 401 ? "unauthorized" : "cloud_offline" });
+    }
+    console.error("[momo] cloud error", err);
+    return send(res, 503, { ok: false, error: "cloud_offline" });
   }
 
   function authRequired(res) {
     return send(res, 401, { ok: false, error: "unauthorized" });
   }
 
+  function cloudState(raw) {
+    if (!raw || typeof raw !== "object" || !raw.createdAt || !raw.daily) {
+      return engine.newState(Date.now());
+    }
+    return raw;
+  }
+
+  function normalizeCloudPayload(out) {
+    if (!out || out.ok === false) return out;
+    out.state = cloudState(out.state);
+    engine.normalize(out.state, content, Date.now());
+    return out;
+  }
+
   async function bootstrap(req, res) {
-    await store.ready;
-    const urls = lanUrls(actualPort);
+    if (!cloud) await store.ready;
+    const urls = cloud ? [] : lanUrls(actualPort);
     send(res, 200, {
       version: content.VERSION,
       needsAuth: true,
+      cloud: !!cloud,
       local: isLocal(req),
-      serverName: "墨墨的小屋",
+      serverName: cloud ? "墨墨 · 云同步" : "墨墨的小屋",
       port: actualPort,
       urls,
       startedAt: new Date(startedAt).toISOString()
@@ -362,6 +399,18 @@ function createServer(opts = {}) {
 
   async function register(req, res) {
     const body = await readBody(req);
+    if (cloud) {
+      try {
+        const out = await cloud.register(body.username, body.password);
+        if (!out || out.ok === false) {
+          const error = (out && out.error) || "register_failed";
+          return send(res, error === "username_taken" ? 409 : 400, { ok: false, error });
+        }
+        return send(res, 200, normalizeCloudPayload(out));
+      } catch (err) {
+        return cloudFailure(res, err);
+      }
+    }
     const created = await store.createAccount(body.username, body.password);
     if (!created.ok) {
       const status = created.error === "username_taken" ? 409 : 400;
@@ -388,6 +437,21 @@ function createServer(opts = {}) {
     }
     if (guard.count >= 8) return send(res, 429, { ok: false, error: "too_many_tries" });
 
+    if (cloud) {
+      try {
+        const out = await cloud.login(body.username, body.password);
+        if (!out || out.ok === false) {
+          guard.count += 1;
+          loginFails.set(key, guard);
+          return send(res, 401, { ok: false, error: (out && out.error) || "wrong_credentials" });
+        }
+        loginFails.delete(key);
+        return send(res, 200, normalizeCloudPayload(out));
+      } catch (err) {
+        return cloudFailure(res, err);
+      }
+    }
+
     const account = await store.verify(body.username, body.password);
     if (!account) {
       guard.count += 1;
@@ -400,73 +464,106 @@ function createServer(opts = {}) {
     return send(res, 200, { ok: true, token, account: publicAccount(account), state });
   }
 
+  async function handleCloudAction(req, res, session) {
+    const body = await readBody(req);
+    const action = body.action || {};
+    try {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const remote = await cloud.getState(session.token);
+        const now = Date.now();
+        let state = cloudState(remote && remote.state);
+        const rev = Number((remote && remote.rev) || 0);
+        let events = engine.normalize(state, content, now);
+        let result = actions.applyAction(state, content, action, now);
+        result.ok = result.ok !== false;
+        const payload = { ok: result.ok, result, state, now: new Date(now).toISOString() };
+        if (events.length) payload.events = events;
+        if (!result.ok) return send(res, result.error === "unknown_food" ? 400 : 200, payload);
+
+        const saved = await cloud.saveState(session.token, state, rev);
+        if (!saved || saved.ok === false) {
+          if (saved && saved.error === "conflict" && saved.state) continue;
+          throw new CloudError((saved && saved.error) || "save_failed");
+        }
+        payload.state = saved.state;
+        payload.rev = saved.rev;
+        if (action.type !== "heartbeat") {
+          broadcast(session.account.id, "state", {
+            state: saved.state,
+            result: { type: action.type, outcome: result },
+            now: payload.now
+          });
+        }
+        return send(res, 200, payload);
+      }
+      return send(res, 409, { ok: false, error: "conflict" });
+    } catch (err) {
+      return cloudFailure(res, err);
+    }
+  }
+
+  async function handleCloudEvents(req, res, session) {
+    let current;
+    try {
+      current = await cloud.getState(session.token);
+    } catch (err) {
+      return cloudFailure(res, err);
+    }
+    let state = cloudState(current && current.state);
+    let lastRev = Number((current && current.rev) || 0);
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-store, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no"
+    });
+    res.write(`retry: 2500
+
+`);
+    res.write(`event: state
+data: ${JSON.stringify({ state, now: new Date().toISOString() })}
+
+`);
+    if (!streams.has(session.account.id)) streams.set(session.account.id, new Set());
+    streams.get(session.account.id).add(res);
+    let polling = false;
+    const poll = setInterval(async () => {
+      if (polling) return;
+      polling = true;
+      try {
+        const next = await cloud.getState(session.token);
+        if (next && next.ok !== false && Number(next.rev || 0) !== lastRev) {
+          lastRev = Number(next.rev || 0);
+          if (next.state && typeof next.state === "object") {
+            broadcast(session.account.id, "state", { state: next.state, now: new Date().toISOString() });
+          }
+        }
+      } catch (_) {
+        /* offline; keep the stream open */
+      } finally {
+        polling = false;
+      }
+    }, 5000);
+    const keep = setInterval(() => {
+      try { res.write(`: ping ${Date.now()}
+
+`); } catch (_) { }
+    }, 20000);
+    req.on("close", () => {
+      clearInterval(poll);
+      clearInterval(keep);
+      const set = streams.get(session.account.id);
+      if (set) set.delete(res);
+    });
+  }
+
   async function handleAction(req, res, session) {
     const body = await readBody(req);
     const action = body.action || {};
     const state = await store.getState(session.account.id);
     const now = Date.now();
-    let result = { ok: true };
     let events = engine.normalize(state, content, now);
-
-    switch (action.type) {
-      case "tap":
-        result = engine.applyTap(state, content, action.count, now);
-        break;
-      case "feed":
-        result = engine.applyFeed(state, content, action.itemId, action.optionId, now);
-        break;
-      case "outing_start":
-        result = engine.startOuting(state, content, action.placeId, action.minutes, now);
-        break;
-      case "outing_finish":
-        if (!state.outing) result = { ok: false, error: "not_away" };
-        else result = engine.finishOuting(state, content, now, !!action.early) || { ok: false };
-        break;
-      case "outing_seen":
-        result = engine.markRecapSeen(state, now);
-        break;
-      case "exercise_start":
-        result = engine.startExercise(state, content, action.kindId, action.minutes, now);
-        break;
-      case "exercise_finish":
-        if (!state.exercise) result = { ok: false, error: "not_exercising" };
-        else result = engine.finishExercise(state, content, now, !!action.early) || { ok: false };
-        break;
-      case "exercise_seen":
-        result = engine.markExerciseSeen(state, now);
-        break;
-      case "set_background":
-        result = engine.setBackground(state, content, action.background, now);
-        break;
-      case "heartbeat":
-        result = engine.heartbeat(state, content, !!action.visible, now);
-        break;
-      case "rename": {
-        const name = engine.validateName(action.name);
-        if (!name) result = { ok: false, error: "bad_name" };
-        else {
-          state.name = name;
-          state.rev = (state.rev || 0) + 1;
-          result = { ok: true, name };
-        }
-        break;
-      }
-      case "reset":
-        if (action.confirm !== state.createdAt) {
-          result = { ok: false, error: "confirm_required" };
-        } else {
-          const fresh = engine.newState(now, state.name);
-          fresh.createdAt = state.createdAt;
-          fresh.totals.days = 1;
-          for (const k of Object.keys(state)) delete state[k];
-          Object.assign(state, fresh);
-          result = { ok: true };
-        }
-        break;
-      default:
-        result = { ok: false, error: "unknown_action" };
-    }
-
+    let result = actions.applyAction(state, content, action, now);
     result.ok = result.ok !== false;
     if (result.ok) store.schedule(session.account.id, state);
     const payload = { ok: result.ok, result, state, now: new Date(now).toISOString() };
@@ -582,7 +679,11 @@ function createServer(opts = {}) {
     if (pathname === "/api/auth/logout" && req.method === "POST") {
       const session = await authenticate(req, url);
       if (!session) return authRequired(res);
-      await store.revoke(session.token);
+      if (cloud) {
+        try { await cloud.logout(session.token); } catch (_) { }
+      } else {
+        await store.revoke(session.token);
+      }
       return send(res, 200, { ok: true });
     }
     if (pathname === "/api/auth/me" && req.method === "GET") {
@@ -593,6 +694,21 @@ function createServer(opts = {}) {
     if (pathname === "/api/state" && req.method === "GET") {
       const session = await authenticate(req, url);
       if (!session) return authRequired(res);
+      if (cloud) {
+        try {
+          const remote = await cloud.getState(session.token);
+          let state = cloudState(remote.state);
+          const events = engine.normalize(state, content, Date.now());
+          let rev = Number(remote.rev || 0);
+          if (!remote.state || events.length) {
+            const saved = await cloud.saveState(session.token, state, rev);
+            if (saved && saved.ok !== false) rev = Number(saved.rev || rev);
+          }
+          return send(res, 200, { ok: true, state, rev, events, now: new Date().toISOString() });
+        } catch (err) {
+          return cloudFailure(res, err);
+        }
+      }
       const state = await store.getState(session.account.id);
       const events = engine.normalize(state, content, Date.now());
       if (events.length) {
@@ -602,12 +718,17 @@ function createServer(opts = {}) {
       return send(res, 200, { ok: true, state, events, now: new Date().toISOString() });
     }
     if (pathname === "/api/events" && req.method === "GET") {
+      if (cloud) {
+        const session = await authenticate(req, url);
+        if (!session) return authRequired(res);
+        return handleCloudEvents(req, res, session);
+      }
       return handleEvents(req, res, url);
     }
     if (pathname === "/api/action" && req.method === "POST") {
       const session = await authenticate(req, url);
       if (!session) return authRequired(res);
-      return handleAction(req, res, session);
+      return cloud ? handleCloudAction(req, res, session) : handleAction(req, res, session);
     }
     if (req.method !== "GET" && req.method !== "HEAD") {
       return send(res, 405, "Method not allowed");
@@ -624,7 +745,7 @@ function createServer(opts = {}) {
   };
 
   async function listen(desiredPort) {
-    await store.ready;
+    if (!cloud) await store.ready;
     const base = Number(desiredPort || 0);
     const attempts = base ? 20 : 1;
     for (let i = 0; i < attempts; i++) {
@@ -649,7 +770,8 @@ function createServer(opts = {}) {
     const urls = lanUrls(actualPort);
     return {
       port: actualPort,
-      urls,
+      cloud: !!cloud,
+      urls: cloud ? [] : urls,
       localUrl: `http://127.0.0.1:${actualPort}`,
       dataDir,
       webDir
@@ -661,7 +783,7 @@ function createServer(opts = {}) {
     closing = true;
     for (const set of streams.values()) for (const res of set) res.end();
     streams.clear();
-    await store.flushAll().catch(() => {});
+    if (store) await store.flushAll().catch(() => {});
     if (server) await new Promise((r) => server.close(r));
   }
 
@@ -672,7 +794,8 @@ function createServer(opts = {}) {
     get info() {
       return {
         port: actualPort,
-        urls: lanUrls(actualPort),
+        cloud: !!cloud,
+        urls: cloud ? [] : lanUrls(actualPort),
         localUrl: `http://127.0.0.1:${actualPort}`,
         dataDir
       };
@@ -687,7 +810,8 @@ if (require.main === module) {
   const srv = createServer({
     dataDir: process.env.MOMO_DATA || path.join(__dirname, "..", "data"),
     webDir: process.env.MOMO_WEB || path.join(__dirname, "..", "web"),
-    sharedDir: process.env.MOMO_SHARED || path.join(__dirname, "..", "shared")
+    sharedDir: process.env.MOMO_SHARED || path.join(__dirname, "..", "shared"),
+    cloudConfig: process.env.MOMO_CLOUD || path.join(__dirname, "..", "cloud.json")
   });
   srv
     .listen(port)

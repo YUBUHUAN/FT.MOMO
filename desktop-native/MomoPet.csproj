@@ -24,8 +24,11 @@
     <Content Include="Assets\tray.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="node\node.exe" Link="node\node.exe" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\server\server.js" Link="server\server.js" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\server\cloud.js" Link="server\cloud.js" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\cloud.json" Link="cloud.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\shared\content.js" Link="shared\content.js" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\shared\engine.js" Link="shared\engine.js" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\shared\actions.js" Link="shared\actions.js" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\web\**\*" Link="web\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

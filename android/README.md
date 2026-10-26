@@ -1,61 +1,45 @@
-# Android APK
+# Android APK（独立云同步版）
 
-`MomoPet-Android-1.2.0.apk` 是一个极简 WebView 壳：它不内置服务端，连接电脑上运行的墨墨服务端。
+`MomoPet-Android-1.3.0.apk` 是独立 App：内置 `web/` 页面和 `shared/` 引擎，直接连接 Supabase 云端。不需要电脑 IP，也不需要同一 Wi-Fi。
 
-## 安装后
+## 使用
 
-1. 电脑打开墨墨，右键 →「个人页面」→「账号与同步」，记下地址，例如 `http://192.168.1.8:8787`。
-2. 手机与电脑连同一个 Wi-Fi。
-3. 打开 APK，填写地址并连接。
-4. 登录电脑上同一个账号；首次也可以直接在手机上创建账号。
-5. 右上角 ⚙ 可以随时修改电脑地址。
+1. 安装 APK（首次可能需要允许“安装未知应用”）。
+2. 打开后直接注册或登录账号。
+3. 电脑端登录同一个账号即可同步。
+4. 手机和电脑都能各自使用；电脑关机不影响手机。
 
 ## 源码构建
 
-需要：
-
-- JDK 17
-- Android SDK Platform 35
-- Android Build Tools 35.0.0
-
-不需要 Gradle。构建流程：
+需要 JDK 17、Android SDK Platform 35、Build Tools 35.0.0，不需要 Gradle。
 
 ```bash
-SDK="$ANDROID_SDK_ROOT"
-BT="$SDK/build-tools/35.0.0"
-JAVA_HOME=/path/to/jdk17
-OUT=dist/MomoPet-Android-1.2.0.apk
-mkdir -p android/build/{gen,classes,dex}
-
-"$BT/aapt2" compile --dir android/res -o android/build/res.zip
-"$BT/aapt2" link -o android/build/unsigned.apk \
-  -I "$SDK/platforms/android-35/android.jar" \
-  --manifest android/AndroidManifest.xml \
-  -R android/build/res.zip --java android/build/gen --auto-add-overlay
-
-find android/src android/build/gen -name '*.java' > android/build/sources.txt
-"$JAVA_HOME/bin/javac" -encoding UTF-8 -source 17 -target 17 \
-  -classpath "$SDK/platforms/android-35/android.jar" \
-  -d android/build/classes @android/build/sources.txt
-
-cd android/build/classes && "$JAVA_HOME/bin/jar" cf ../classes.jar . && cd -
-"$BT/d8" --lib "$SDK/platforms/android-35/android.jar" --min-api 24 \
-  --output android/build/dex android/build/classes.jar
-
-cp android/build/unsigned.apk android/build/app.apk
-cd android/build/dex && "$JAVA_HOME/bin/jar" uf ../app.apk classes.dex && cd -
-"$BT/zipalign" -f 4 android/build/app.apk android/build/aligned.apk
-
-# 第一次需要生成签名证书；之后的更新要使用同一个 keystore
-"$JAVA_HOME/bin/keytool" -genkeypair -keystore android/keystore/momo.keystore \
-  -storepass momopet123 -keypass momopet123 -alias momopet \
-  -keyalg RSA -keysize 2048 -validity 10000 \
-  -dname "CN=MomoPet, OU=MomoPet, O=MomoPet, L=Local, ST=Local, C=CN"
-
-"$BT/apksigner" sign --ks android/keystore/momo.keystore \
-  --ks-pass pass:momopet123 --key-pass pass:momopet123 \
-  --out "$OUT" android/build/aligned.apk
-"$BT/apksigner" verify "$OUT"
+export ANDROID_SDK_ROOT=/path/to/android-sdk
+export JAVA_HOME=/path/to/jdk17
+bash tools/build-android-apk.sh
 ```
 
-> `android/keystore/` 不提交到仓库。发布新 APK 时必须继续使用同一个 keystore，否则 Android 会把它当成不同应用，需要先卸载旧版。当前仓库里的 `android/release/MomoPet-Android-1.2.0.apk` 是用本次构建的本地 keystore 签名的。
+脚本会：
+
+- 把 `web/` 和 `shared/` 打包进 `android/assets/`；
+- 注入 `android/cloud-config.js`；
+- 用 `aapt2`、`javac`、`d8`、`zipalign`、`apksigner` 编译并签名；
+- 输出 `dist/MomoPet-Android-1.3.0.apk`。
+
+## 云配置
+
+`android/cloud-config.js`：
+
+```js
+window.MOMO_CLOUD = {
+  url: "https://cflewtmxgekfpusicnfx.supabase.co",
+  key: "sb_publishable_...",
+  device: "android"
+};
+```
+
+这里的 key 是 Supabase 的 **publishable/anon 公开密钥**，不是 service_role 密钥。数据库表不直接暴露，所有读写都走 `cloud/schema.sql` 里的 RPC 函数。
+
+## 签名
+
+`android/keystore/` 不提交到仓库。更新 APK 必须继续使用同一个 keystore，否则 Android 会把它当成不同应用，需要先卸载旧版。当前 `android/release/MomoPet-Android-1.3.0.apk` 用本地 keystore 签名。

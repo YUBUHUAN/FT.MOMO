@@ -18,7 +18,7 @@ public partial class AuthWindow : Window
         _server = server;
         InitializeComponent();
         var url = server.Urls.Count > 0 ? server.Urls[0].Url : server.BaseUrl;
-        ServerInfo.Text = url + "/";
+        ServerInfo.Text = server.CloudEnabled ? "云同步已开启 · 电脑和手机登录同一个账号" : url + "/";
         SetMode(false);
         Loaded += (_, _) => UserBox.Focus();
         PreviewKeyDown += (_, e) =>
@@ -119,13 +119,14 @@ public partial class AuthWindow : Window
                 "bad_username" => "账号要 2-20 个字符，可以用中文、字母、数字、_ 或 -",
                 "bad_password" => "密码至少 6 位，最多 72 位",
                 "too_many_tries" => "试太多次啦，等十分钟再来",
-                "network" => "连不上这台电脑的本地服务",
+                "network" => "连不上云同步服务，检查网络后再试",
+                "cloud_offline" => "云同步暂时连不上，检查网络后再试",
                 _ => "没有成功，再试一次吧"
             };
         }
         catch
         {
-            ErrorText.Text = "连不上这台电脑的本地服务";
+            ErrorText.Text = "连不上云同步服务，检查网络后再试";
         }
         finally
         {
