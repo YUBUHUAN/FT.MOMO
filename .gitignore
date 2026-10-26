@@ -1,0 +1,33 @@
+# build outputs
+desktop-native/bin/
+desktop-native/obj/
+desktop-native/node/
+dist/
+.dotnet/
+.nuget/
+.appdata/
+.localappdata/
+*.pdb
+
+# local data / runtime
+data/
+.ssh/
+desktop-settings.json
+startup.log
+*.log
+
+# local test artefacts
+test/data-*/
+test/launcher-*/
+test/shots/
+test/.chrome-*/
+test/.org.chromium.*/
+test/*.log
+test/*.txt
+*.user
+
+# IDE / OS
+.vs/
+.idea/
+Thumbs.db
+.DS_Store

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>MomoPet</AssemblyName>
+    <RootNamespace>MomoPet</RootNamespace>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>1.0.0</Version>
+    <Product>墨墨 · 桌宠</Product>
+    <Company>MomoPet</Company>
+    <LangVersion>latest</LangVersion>
+    <SatelliteResourceLanguages>zh-Hans;en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\pet.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\avatar-round.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\app.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\tray.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="node\node.exe" Link="node\node.exe" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\server\server.js" Link="server\server.js" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\shared\content.js" Link="shared\content.js" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\shared\engine.js" Link="shared\engine.js" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\web\**\*" Link="web\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fbf6ee">
+  <title>墨墨的手账</title>
+  <link rel="icon" href="/assets/icon-192.png" type="image/png">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/profile.css">
+</head>
+<body class="mode-profile">
+  <div class="grain" aria-hidden="true"></div>
+  <div class="pbackdrop" aria-hidden="true"></div>
+
+  <header class="pbar" id="pbar">
+    <button class="pbar-btn" id="pBack" aria-label="返回">←</button>
+    <div class="pbrand">
+      <span class="hand">墨墨的手账</span>
+      <small>MOMO'S NOTEBOOK</small>
+    </div>
+    <div class="pbar-right">
+      <span class="ptag" id="pTag">DAY 01</span>
+      <button class="pbar-btn close" id="pClose" aria-label="关闭">✕</button>
+    </div>
+  </header>
+
+  <main class="pwrap">
+    <div class="pcol left">
+      <article class="pcard identity card-tape">
+        <div class="id-row">
+          <div class="avatar-wrap">
+            <img src="/assets/avatar-round.png" alt="墨墨">
+            <span class="live-dot" id="pLive"></span>
+          </div>
+          <div class="id-main">
+            <div class="id-name">
+              <h1 id="pName">墨墨</h1>
+              <button class="edit-btn" id="pRename" aria-label="修改名字">✎</button>
+            </div>
+            <div class="id-sub"><span id="pDays">第 1 天</span><span class="sep">·</span><span id="pMoodLabel">轻快起来</span><span class="sep">·</span><span id="pAccount">@</span></div>
+            <p class="id-note" id="pMoodNote">风一吹，烦恼就散了一点。</p>
+          </div>
+          <div class="mood-dial" id="moodDial" style="--p: 64%">
+            <div class="dial-inner">
+              <span id="dialEmoji">🌤</span>
+              <b id="dialValue">64</b>
+              <small>心情</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="meter">
+          <div class="meter-row">
+            <span>饱食度</span>
+            <span class="meter-value" id="pFullValue">34</span>
+          </div>
+          <div class="meter-track"><div class="meter-fill" id="pFullBar" style="width:34%"></div></div>
+          <p class="meter-note" id="pFullNote">肚子空空的，正好可以吃点东西。</p>
+        </div>
+
+        <div class="meter">
+          <div class="meter-row">
+            <span>健康值</span>
+            <span class="meter-value" id="pHealthValue">70</span>
+          </div>
+          <div class="meter-track"><div class="meter-fill health" id="pHealthBar" style="width:70%"></div></div>
+          <p class="meter-note" id="pHealthNote">好好吃饭、一起运动，都会让她更健康。</p>
+        </div>
+
+        <div class="meter">
+          <div class="meter-row">
+            <span>疲惫值</span>
+            <span class="meter-value" id="pFatigueValue">8</span>
+          </div>
+          <div class="meter-track"><div class="meter-fill fatigue" id="pFatigueBar" style="width:8%"></div></div>
+          <p class="meter-note" id="pFatigueNote">累了就要休息，休息会慢慢恢复。</p>
+        </div>
+
+        <div class="stat-strip">
+          <div class="stat"><b id="pTodayTime">0 分钟</b><span>今日陪伴</span></div>
+          <div class="stat"><b id="pTaps">0</b><span>被戳</span></div>
+          <div class="stat"><b id="pFeeds">0</b><span>投喂</span></div>
+          <div class="stat"><b id="pOutingCount">0</b><span>出游</span></div>
+          <div class="stat"><b id="pExerciseCount">0</b><span>运动</span></div>
+        </div>
+      </article>
+
+      <article class="pcard chart-card">
+        <div class="card-head chart-head">
+          <div>
+            <h2 id="chartTitle">本周</h2>
+            <span class="chart-range" id="chartRange">周一 - 周日</span>
+          </div>
+          <div class="chart-nav">
+            <button class="week-nav" id="chartPrev" aria-label="上一周">‹</button>
+            <button class="week-nav" id="chartNext" aria-label="下一周">›</button>
+            <button class="cal-btn" id="chartCal" aria-label="打开日历">📅 日历</button>
+          </div>
+        </div>
+        <p class="card-sub">左右滑动看看之前的周，点日历可以看到所有的日子。</p>
+        <div class="chart" id="pChart"></div>
+        <div class="chart-foot">
+          <span class="dot"></span>
+          <span id="pChartNote">今天还早，慢慢来。</span>
+        </div>
+      </article>
+
+      <article class="pcard pair-card">
+        <div class="card-head">
+          <h2>账号与同步</h2>
+          <span class="tag">SYNC</span>
+        </div>
+        <p class="card-sub">每个账号拥有独立的小屋。电脑和手机登录同一个账号，就会实时同步。</p>
+        <div class="code-box account-box">
+          <div>
+            <span class="code-label">当前账号</span>
+            <strong id="pAccountName">—</strong>
+          </div>
+          <button class="btn small ghost" id="logoutBtn">退出账号</button>
+        </div>
+        <div class="link-row">
+          <span class="link-icon">⌁</span>
+          <span class="link-text" id="pServerLink">—</span>
+          <button class="btn small soft" id="copyLink">复制地址</button>
+        </div>
+        <div class="addr-list" id="pAddresses"></div>
+        <p class="pair-note" id="pPairNote">手机打开上面的地址，登录同一个账号和密码即可同步。</p>
+      </article>
+    </div>
+
+    <div class="pcol right">
+      <article class="pcard">
+        <div class="card-head">
+          <h2>最近吃了什么</h2>
+          <span class="tag">FEED</span>
+        </div>
+        <ul class="feed-list" id="pFeedLog"></ul>
+      </article>
+
+      <article class="pcard">
+        <div class="card-head">
+          <h2>出游手账</h2>
+          <span class="tag">TRIPS</span>
+        </div>
+        <div class="trip-list" id="pTripList"></div>
+      </article>
+
+      <article class="pcard">
+        <div class="card-head">
+          <h2>运动记录</h2>
+          <span class="tag">SWEAT</span>
+        </div>
+        <div class="trip-list" id="pExerciseList"></div>
+      </article>
+
+      <article class="pcard">
+        <div class="card-head">
+          <h2>小屋设置</h2>
+          <span class="tag">SETTINGS</span>
+        </div>
+        <div class="set-list">
+          <div class="set-row">
+            <div class="set-text"><b>声音</b><small>很轻的提示音，不会吵</small></div>
+            <button class="switch" id="setSound" role="switch" aria-checked="true" aria-label="声音"></button>
+          </div>
+          <div class="set-row electron-only">
+            <div class="set-text"><b>始终置顶</b><small>让她待在别的窗口上面</small></div>
+            <button class="switch" id="setTop" role="switch" aria-checked="true" aria-label="始终置顶"></button>
+          </div>
+          <div class="set-row electron-only">
+            <div class="set-text"><b>开机启动</b><small>下次打开电脑，她已经在等你</small></div>
+            <button class="switch" id="setLaunch" role="switch" aria-checked="false" aria-label="开机启动"></button>
+          </div>
+          <div class="set-row electron-only">
+            <div class="set-text"><b>回到右下角</b><small>把她从屏幕边缘找回来</small></div>
+            <button class="btn small ghost" id="setResetPos">归位</button>
+          </div>
+        </div>
+        <div class="danger-row">
+          <div class="set-text"><b>重新开始</b><small>清空心情、投喂、运动与出游记录，账号保留</small></div>
+          <button class="btn small danger" id="setReset">重置</button>
+        </div>
+      </article>
+
+      <footer class="pfoot">
+        <span class="hand">墨墨 v1.1</span>
+        <span>本地优先 · 数据只留在这台电脑上</span>
+      </footer>
+    </div>
+  </main>
+
+  <div class="pmodal" id="pModal" aria-hidden="true">
+    <div class="pmodal-card" id="pModalCard"></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="/shared/content.js"></script>
+  <script src="/shared/engine.js"></script>
+  <script type="module" src="/js/profile.js"></script>
+</body>
+</html>

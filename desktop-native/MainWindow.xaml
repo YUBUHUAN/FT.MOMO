@@ -1,0 +1,219 @@
+<Window x:Class="MomoPet.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="墨墨" Width="380" Height="620"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ShowInTaskbar="False" Topmost="True" ResizeMode="NoResize"
+        WindowStartupLocation="Manual" Icon="Assets/app.ico"
+        TextOptions.TextFormattingMode="Display" UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
+  <Grid x:Name="Root" Background="Transparent">
+    <Canvas x:Name="Stage">
+      <Border x:Name="MoodPill" Canvas.Left="12" Canvas.Top="12" Background="#D9FFFDF9"
+              BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="14"
+              Padding="10,5" Cursor="Hand" ToolTip="打开手账">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock x:Name="MoodEmoji" FontFamily="{StaticResource EmojiFont}" FontSize="13" VerticalAlignment="Center" />
+          <TextBlock x:Name="MoodValue" Margin="5,0,0,0" FontFamily="Georgia" FontSize="13" FontWeight="Bold"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+      </Border>
+
+      <StackPanel x:Name="BubbleWrap" Canvas.Left="12" Canvas.Top="52" Width="356" Visibility="Collapsed" Opacity="0">
+        <StackPanel.RenderTransform>
+          <TranslateTransform x:Name="BubbleTranslate" Y="8" />
+        </StackPanel.RenderTransform>
+        <Border x:Name="Bubble" Background="{StaticResource Paper}" BorderBrush="{StaticResource Ink}"
+                BorderThickness="1.5" CornerRadius="18,20,16,20" Padding="14,11,14,11">
+          <Border.Effect>
+            <DropShadowEffect BlurRadius="16" ShadowDepth="3" Direction="270" Opacity="0.22" />
+          </Border.Effect>
+          <StackPanel>
+            <TextBlock x:Name="BubbleText" FontFamily="{StaticResource HandFont}" FontSize="15.5"
+                       Foreground="{StaticResource Ink}" TextWrapping="Wrap" LineHeight="27" />
+            <TextBlock x:Name="BubbleMark" FontSize="9.5" Foreground="{StaticResource Muted}" Margin="0,4,0,0"
+                       Visibility="Collapsed" />
+          </StackPanel>
+        </Border>
+        <Path HorizontalAlignment="Center" Margin="0,-1,0,0" Data="M0,0 L18,0 L9,11 Z"
+              Fill="{StaticResource Paper}" Stroke="{StaticResource Ink}" StrokeThickness="1.5" />
+      </StackPanel>
+
+      <Border x:Name="ScenePanel" Canvas.Left="20" Canvas.Top="170" Width="340" Height="440"
+              CornerRadius="28" ClipToBounds="True" IsHitTestVisible="True" Opacity="0.96"
+              MouseLeftButtonDown="WindowDrag_MouseLeftButtonDown" Cursor="SizeAll"
+              SizeChanged="ScenePanel_SizeChanged">
+        <Grid>
+          <Border x:Name="SceneWall" />
+          <Border x:Name="SceneFloor" Height="112" VerticalAlignment="Bottom" />
+          <Border x:Name="SceneWindow" Width="82" Height="100" HorizontalAlignment="Right" VerticalAlignment="Top"
+                  Margin="0,28,28,0" BorderBrush="#CCFFFDF9" BorderThickness="6" CornerRadius="7"
+                  Background="#DCEBEC">
+            <Grid>
+              <Border Width="3" Background="#B3FFFDF9" HorizontalAlignment="Center" />
+              <Border Height="3" Background="#B3FFFDF9" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+          <TextBlock x:Name="SceneLamp" Text="💡" FontFamily="{StaticResource EmojiFont}" FontSize="27"
+                     HorizontalAlignment="Left" VerticalAlignment="Top" Margin="30,32,0,0" Opacity="0.78" />
+          <TextBlock x:Name="ScenePlant" Text="🪴" FontFamily="{StaticResource EmojiFont}" FontSize="36"
+                     HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="26,0,0,34" Opacity="0.72" />
+          <Ellipse x:Name="SceneRug" Width="230" Height="52" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                   Margin="0,0,0,18" Fill="#55C98F75" />
+          <TextBlock x:Name="SceneHint" Text="她的小房间" FontSize="8.5" Foreground="#8C7B6C"
+                     HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,24,18" />
+        </Grid>
+      </Border>
+
+      <Ellipse x:Name="PetShadow" Width="236" Height="28" Canvas.Left="72" Canvas.Top="580" Fill="#3A000000">
+        <Ellipse.Effect>
+          <BlurEffect Radius="18" />
+        </Ellipse.Effect>
+      </Ellipse>
+
+      <Image x:Name="Pet" Width="340" Height="340" Canvas.Left="20" Canvas.Top="262"
+             Source="Assets/pet.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
+             Cursor="Hand" ToolTip="摸摸墨墨">
+        <Image.RenderTransform>
+          <TransformGroup>
+            <TranslateTransform x:Name="PetTranslate" />
+            <RotateTransform x:Name="PetRotate" CenterX="170" CenterY="300" />
+            <ScaleTransform x:Name="PetScale" CenterX="170" CenterY="300" ScaleX="1" ScaleY="1" />
+          </TransformGroup>
+        </Image.RenderTransform>
+      </Image>
+
+      <StackPanel x:Name="Dock" Canvas.Left="336" Canvas.Top="18" Width="42">
+        <Button x:Name="BackgroundBtn" Style="{StaticResource RoundButton}" Content="🖼" Margin="0,0,0,8"
+                ToolTip="换小屋背景" FontFamily="{StaticResource EmojiFont}" />
+        <Button x:Name="FeedBtn" Style="{StaticResource RoundButton}" Content="🧋" Margin="0,0,0,8"
+                ToolTip="喂她吃点东西" FontFamily="{StaticResource EmojiFont}" />
+        <Button x:Name="OutingBtn" Style="{StaticResource RoundButton}" Content="🎒" Margin="0,0,0,8"
+                ToolTip="让她出门走走" FontFamily="{StaticResource EmojiFont}" />
+        <Button x:Name="ExerciseBtn" Style="{StaticResource RoundButton}" Content="🏃" Margin="0,0,0,8"
+                ToolTip="运动一下" FontFamily="{StaticResource EmojiFont}" />
+        <Button x:Name="ProfileBtn" Style="{StaticResource RoundButton}" Content="📔"
+                ToolTip="个人页面" FontFamily="{StaticResource EmojiFont}" />
+      </StackPanel>
+
+      <Ellipse x:Name="SyncDot" Width="8" Height="8" Canvas.Left="10" Canvas.Top="602" Fill="{StaticResource SageDeep}"
+               ToolTip="已同步" />
+
+    </Canvas>
+
+    <Canvas x:Name="FxLayer" IsHitTestVisible="False" />
+
+    <Border x:Name="AwayCard" MouseLeftButtonDown="SheetHeader_MouseLeftButtonDown" Width="320" Background="{StaticResource Paper}" BorderBrush="{StaticResource Ink}"
+            BorderThickness="1.5" CornerRadius="20" Padding="16" HorizontalAlignment="Center"
+            VerticalAlignment="Center" Visibility="Collapsed">
+      <Border.Effect>
+        <DropShadowEffect BlurRadius="28" ShadowDepth="5" Direction="270" Opacity="0.24" />
+      </Border.Effect>
+      <StackPanel>
+        <Border Height="96" CornerRadius="13" ClipToBounds="True" Margin="0,0,0,11">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+              <GradientStop Color="#D8E6E4" Offset="0" />
+              <GradientStop Color="#F4E6CF" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+          <Grid>
+            <Ellipse Width="24" Height="24" Fill="#F6DFA8" HorizontalAlignment="Right" VerticalAlignment="Top"
+                     Margin="0,14,22,0" />
+            <Ellipse Width="310" Height="95" Fill="#B9C9AE" VerticalAlignment="Bottom" Margin="0,0,0,-50" />
+            <TextBlock x:Name="AwayEmoji" Text="🌳" FontFamily="{StaticResource EmojiFont}" FontSize="42"
+                       HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,6" />
+          </Grid>
+        </Border>
+        <TextBlock Text="她出门了" FontSize="9.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" />
+        <TextBlock x:Name="AwayTitle" Text="去公园走走" FontFamily="{StaticResource HandFont}" FontSize="18"
+                   HorizontalAlignment="Center" Margin="0,4,0,0" />
+        <TextBlock x:Name="AwayCount" Text="10:00" FontFamily="Georgia" FontSize="29" HorizontalAlignment="Center"
+                   Margin="0,7,0,2" />
+        <TextBlock x:Name="AwayNote" Text="不用等她，她会自己看时间。" FontSize="10.5" Foreground="{StaticResource Muted}"
+                   TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,10" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+          <Button x:Name="EarlyBtn" Style="{StaticResource GhostButton}" Content="提前回来" Padding="14,7"
+                  FontSize="11.5" Margin="0,0,8,0" />
+          <Button x:Name="PeekBtn" Style="{StaticResource SoftButton}" Content="看看她" Padding="14,7"
+                  FontSize="11.5" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <Border x:Name="ExerciseCard" Width="310" Background="{StaticResource Paper}"
+            MouseLeftButtonDown="SheetHeader_MouseLeftButtonDown" BorderBrush="{StaticResource Ink}"
+            BorderThickness="1.5" CornerRadius="18" Padding="14,12" HorizontalAlignment="Center"
+            VerticalAlignment="Top" Margin="0,88,0,0" Visibility="Collapsed">
+      <Border.Effect>
+        <DropShadowEffect BlurRadius="22" ShadowDepth="4" Direction="270" Opacity="0.22" />
+      </Border.Effect>
+      <StackPanel>
+        <TextBlock Text="运动中 · 挥汗如雨" FontSize="9" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" />
+        <TextBlock x:Name="ExerciseTitle" Text="正在跑步" FontFamily="{StaticResource HandFont}" FontSize="17"
+                   HorizontalAlignment="Center" Margin="0,2,0,0" />
+        <TextBlock x:Name="ExerciseCount" Text="03:00" FontFamily="Georgia" FontSize="25" HorizontalAlignment="Center"
+                   Margin="0,2,0,0" />
+        <TextBlock x:Name="ExerciseNote" Text="正在跑步……汗水要滴到眼睛里了。" FontSize="10" Foreground="{StaticResource Muted}"
+                   TextWrapping="Wrap" TextAlignment="Center" Margin="0,1,0,8" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+          <Button x:Name="StopExerciseBtn" Style="{StaticResource GhostButton}" Content="让她停下" Padding="14,6"
+                  FontSize="11" Margin="0,0,8,0" />
+          <Button x:Name="ExercisePeekBtn" Style="{StaticResource SoftButton}" Content="看看她" Padding="14,6"
+                  FontSize="11" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <Grid x:Name="SheetLayer" Visibility="Collapsed">
+      <Border x:Name="Sheet" Margin="8" Background="{StaticResource Paper}" BorderBrush="{StaticResource Ink}"
+              BorderThickness="1.5" CornerRadius="22">
+        <Border.Effect>
+          <DropShadowEffect BlurRadius="28" ShadowDepth="5" Direction="270" Opacity="0.28" />
+        </Border.Effect>
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+          <Grid Margin="18,14,14,2" Cursor="SizeAll" MouseLeftButtonDown="SheetHeader_MouseLeftButtonDown">
+            <StackPanel>
+              <TextBlock x:Name="SheetTitle" Style="{StaticResource SectionTitle}" Text="投喂" />
+              <TextBlock x:Name="SheetSub" Style="{StaticResource MutedText}" Margin="0,3,0,0" />
+            </StackPanel>
+            <Button x:Name="SheetClose" Style="{StaticResource CloseButton}" HorizontalAlignment="Right"
+                    VerticalAlignment="Top" />
+          </Grid>
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                        HorizontalContentAlignment="Stretch" Padding="0,4,0,0">
+            <Border Padding="18,6,18,10">
+              <StackPanel x:Name="SheetBody" />
+            </Border>
+          </ScrollViewer>
+          <Border x:Name="SheetFoot" Grid.Row="2" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0"
+                  Padding="18,10,18,14" Visibility="Collapsed">
+            <ContentControl x:Name="SheetFootContent" />
+          </Border>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <Grid x:Name="ModalLayer" Visibility="Collapsed">
+      <Border x:Name="ModalCard" Width="330" Background="{StaticResource Paper}" BorderBrush="{StaticResource Ink}"
+              BorderThickness="1.5" CornerRadius="20" Padding="18" HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+        <Border.Effect>
+          <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.28" />
+        </Border.Effect>
+        <ContentControl x:Name="ModalContent" />
+      </Border>
+    </Grid>
+
+    <Border x:Name="Toast" Background="{StaticResource Ink}" CornerRadius="16" Padding="14,7"
+            HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,18" Opacity="0"
+            IsHitTestVisible="False">
+      <TextBlock x:Name="ToastText" Foreground="{StaticResource Paper}" FontSize="11.5" />
+    </Border>
+  </Grid>
+</Window>

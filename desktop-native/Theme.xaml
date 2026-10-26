@@ -1,0 +1,376 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Color x:Key="PaperColor">#FBF6EE</Color>
+  <Color x:Key="Paper2Color">#F5ECDF</Color>
+  <Color x:Key="Paper3Color">#EFE3D2</Color>
+  <Color x:Key="InkColor">#211E26</Color>
+  <Color x:Key="Ink2Color">#4B4552</Color>
+  <Color x:Key="MutedColor">#8D8377</Color>
+  <Color x:Key="BlushColor">#F2BCC1</Color>
+  <Color x:Key="BlushDeepColor">#E59AA4</Color>
+  <Color x:Key="SageColor">#A9B7A3</Color>
+  <Color x:Key="SageDeepColor">#7F9179</Color>
+  <Color x:Key="ButterColor">#F3D9A4</Color>
+  <Color x:Key="DangerColor">#C4675F</Color>
+
+  <SolidColorBrush x:Key="Paper" Color="{StaticResource PaperColor}" />
+  <SolidColorBrush x:Key="Paper2" Color="{StaticResource Paper2Color}" />
+  <SolidColorBrush x:Key="Paper3" Color="{StaticResource Paper3Color}" />
+  <SolidColorBrush x:Key="Ink" Color="{StaticResource InkColor}" />
+  <SolidColorBrush x:Key="Ink2" Color="{StaticResource Ink2Color}" />
+  <SolidColorBrush x:Key="Muted" Color="{StaticResource MutedColor}" />
+  <SolidColorBrush x:Key="Blush" Color="{StaticResource BlushColor}" />
+  <SolidColorBrush x:Key="BlushDeep" Color="{StaticResource BlushDeepColor}" />
+  <SolidColorBrush x:Key="Sage" Color="{StaticResource SageColor}" />
+  <SolidColorBrush x:Key="SageDeep" Color="{StaticResource SageDeepColor}" />
+  <SolidColorBrush x:Key="Butter" Color="{StaticResource ButterColor}" />
+  <SolidColorBrush x:Key="Danger" Color="{StaticResource DangerColor}" />
+  <SolidColorBrush x:Key="Line" Color="#33211E26" />
+  <SolidColorBrush x:Key="LineStrong" Color="#B3211E26" />
+
+  <FontFamily x:Key="HandFont">KaiTi</FontFamily>
+  <FontFamily x:Key="UiFont">Microsoft YaHei UI</FontFamily>
+  <FontFamily x:Key="EmojiFont">Segoe UI Emoji</FontFamily>
+
+  <!-- primary button -->
+  <Style x:Key="PrimaryButton" TargetType="Button">
+    <Setter Property="Background" Value="{StaticResource Ink}" />
+    <Setter Property="Foreground" Value="{StaticResource Paper}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Ink}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="Padding" Value="18,9" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="22"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Bd" Property="Opacity" Value="0.88" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter TargetName="Bd" Property="Opacity" Value="0.72" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter TargetName="Bd" Property="Opacity" Value="0.38" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="GhostButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource Ink}" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineStrong}" />
+  </Style>
+
+  <Style x:Key="SoftButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+    <Setter Property="Background" Value="{StaticResource Paper2}" />
+    <Setter Property="Foreground" Value="{StaticResource Ink}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+
+  <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+    <Setter Property="Background" Value="{StaticResource Danger}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Danger}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+
+  <Style x:Key="SmallButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+    <Setter Property="Padding" Value="12,6" />
+    <Setter Property="FontSize" Value="11.5" />
+  </Style>
+
+  <!-- round icon button used for dock / close -->
+  <Style x:Key="RoundButton" TargetType="Button">
+    <Setter Property="Width" Value="38" />
+    <Setter Property="Height" Value="38" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="Background" Value="{StaticResource Paper}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Ink}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Grid>
+            <Border x:Name="Bd" CornerRadius="19" Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1.5" />
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Bd" Property="Background" Value="{StaticResource Paper2}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter TargetName="Bd" Property="Background" Value="{StaticResource Paper3}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    <Setter Property="Effect">
+      <Setter.Value>
+        <DropShadowEffect BlurRadius="8" ShadowDepth="1.5" Direction="270" Opacity="0.18" Color="#000000" />
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource RoundButton}">
+    <Setter Property="Width" Value="28" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Content" Value="✕" />
+    <Setter Property="Effect" Value="{x:Null}" />
+    <Setter Property="Background" Value="{StaticResource Paper2}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+
+  <!-- food row -->
+  <Style x:Key="RowButton" TargetType="Button">
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Bd" Background="#B3FFFDF9" BorderBrush="{StaticResource Line}" BorderThickness="1.5"
+                  CornerRadius="14" Padding="12" Margin="0,0,0,8">
+            <ContentPresenter />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource LineStrong}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- option chip -->
+  <Style x:Key="ChipToggle" TargetType="ToggleButton">
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Margin" Value="0,0,7,7" />
+    <Setter Property="Padding" Value="13,6" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{StaticResource Ink}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ToggleButton">
+          <Border x:Name="Bd" Background="{StaticResource Paper}" BorderBrush="{StaticResource Line}"
+                  BorderThickness="1.5" CornerRadius="16" Padding="{TemplateBinding Padding}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource LineStrong}" />
+            </Trigger>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="Bd" Property="Background" Value="{StaticResource Ink}" />
+              <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Ink}" />
+              <Setter Property="Foreground" Value="{StaticResource Paper}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- switch -->
+  <Style x:Key="Switch" TargetType="CheckBox">
+    <Setter Property="Width" Value="40" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="CheckBox">
+          <Grid>
+            <Border x:Name="Track" Background="{StaticResource Paper3}" BorderBrush="{StaticResource Line}"
+                    BorderThickness="1" CornerRadius="11" />
+            <Ellipse x:Name="Thumb" Width="16" Height="16" Fill="{StaticResource Paper}" HorizontalAlignment="Left"
+                     Margin="3,0,0,0">
+              <Ellipse.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1" Direction="270" Opacity="0.25" />
+              </Ellipse.Effect>
+            </Ellipse>
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="Track" Property="Background" Value="{StaticResource Sage}" />
+              <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource SageDeep}" />
+              <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right" />
+              <Setter TargetName="Thumb" Property="Margin" Value="0,0,3,0" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- menu -->
+  <Style TargetType="ContextMenu">
+    <Setter Property="Background" Value="{StaticResource Paper}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Ink}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="Padding" Value="6" />
+    <Setter Property="HasDropShadow" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ContextMenu">
+          <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="14" Padding="{TemplateBinding Padding}">
+            <StackPanel IsItemsHost="True" />
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style TargetType="MenuItem">
+    <Setter Property="Foreground" Value="{StaticResource Ink}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Padding" Value="10,7" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="MenuItem">
+          <Border x:Name="Bd" Background="Transparent" CornerRadius="8" Padding="{TemplateBinding Padding}">
+            <ContentPresenter ContentSource="Header" VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+              <Setter TargetName="Bd" Property="Background" Value="{StaticResource Paper2}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Opacity" Value="0.4" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style TargetType="Separator">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Margin" Value="8,5" />
+    <Setter Property="Background" Value="{StaticResource Line}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Separator">
+          <Border Background="{TemplateBinding Background}" Height="1" />
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- cards -->
+  <Style x:Key="Card" TargetType="Border">
+    <Setter Property="Background" Value="{StaticResource Paper}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Line}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="18" />
+    <Setter Property="Padding" Value="15" />
+  </Style>
+
+  <Style x:Key="TagText" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="Georgia" />
+    <Setter Property="FontSize" Value="8" />
+    <Setter Property="Foreground" Value="{StaticResource Muted}" />
+  </Style>
+
+  <Style x:Key="MutedText" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="10.5" />
+    <Setter Property="Foreground" Value="{StaticResource Muted}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
+  <Style x:Key="HandText" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource HandFont}" />
+    <Setter Property="Foreground" Value="{StaticResource Ink}" />
+  </Style>
+
+  <Style x:Key="SectionTitle" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource HandFont}" />
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource Ink}" />
+  </Style>
+
+  <!-- selectable food row -->
+  <Style x:Key="RowToggle" TargetType="ToggleButton">
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ToggleButton">
+          <Border x:Name="Bd" Background="#B3FFFDF9" BorderBrush="{StaticResource Line}" BorderThickness="1.5"
+                  CornerRadius="14" Padding="12" Margin="0,0,0,8">
+            <ContentPresenter />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource LineStrong}" />
+            </Trigger>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="Bd" Property="Background" Value="{StaticResource Paper}" />
+              <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Ink}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- selectable outing card -->
+  <Style x:Key="PlaceToggle" TargetType="ToggleButton">
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Width" Value="140" />
+    <Setter Property="Margin" Value="0,0,8,8" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ToggleButton">
+          <Border x:Name="Bd" Background="#B3FFFDF9" BorderBrush="{StaticResource Line}" BorderThickness="1.5"
+                  CornerRadius="14" Padding="11,10">
+            <ContentPresenter />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource LineStrong}" />
+            </Trigger>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="Bd" Property="Background" Value="{StaticResource Paper}" />
+              <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Ink}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- slim meter -->
+  <Style x:Key="SlimBar" TargetType="ProgressBar">
+    <Setter Property="Height" Value="7" />
+    <Setter Property="Background" Value="{StaticResource Paper3}" />
+    <Setter Property="Foreground" Value="{StaticResource BlushDeep}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ProgressBar">
+          <Grid>
+            <Border Background="{TemplateBinding Background}" CornerRadius="4" />
+            <Border x:Name="PART_Track" />
+            <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" CornerRadius="4"
+                    HorizontalAlignment="Left" />
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+</ResourceDictionary>

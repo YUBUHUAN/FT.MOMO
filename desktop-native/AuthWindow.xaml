@@ -1,0 +1,111 @@
+<Window x:Class="MomoPet.AuthWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="墨墨 · 登录" Width="470" Height="710"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True" Topmost="True" Icon="Assets/app.ico">
+  <Window.Resources>
+    <Style x:Key="AuthTab" TargetType="Button">
+      <Setter Property="Height" Value="34" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="999"
+                    Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bg" Property="Opacity" Value="0.86" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
+
+  <Border x:Name="Card" Background="{StaticResource Paper}" BorderBrush="{StaticResource Ink}" BorderThickness="1.5"
+          CornerRadius="24">
+    <Border.Effect>
+      <DropShadowEffect BlurRadius="34" ShadowDepth="8" Direction="270" Opacity="0.28" />
+    </Border.Effect>
+    <Grid Margin="30,22,30,24">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <Grid Grid.Row="0" MouseLeftButtonDown="Card_MouseLeftButtonDown">
+        <StackPanel>
+          <TextBlock Text="MOMO'S ROOM" FontFamily="Georgia" FontSize="8.5" Foreground="{StaticResource Muted}" Margin="2,0,0,2" />
+          <TextBlock Text="墨墨的小屋" FontFamily="{StaticResource HandFont}" FontSize="24" FontWeight="Bold" />
+        </StackPanel>
+        <Button x:Name="CloseBtn" Style="{StaticResource CloseButton}" HorizontalAlignment="Right" VerticalAlignment="Top"
+                Content="✕" Click="Close_Click" />
+      </Grid>
+
+      <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+        <Image Source="Assets/avatar-round.png" Width="76" Height="76" HorizontalAlignment="Center" Margin="0,2,0,10" />
+
+        <TextBlock Text="先给墨墨一间小屋" FontFamily="{StaticResource HandFont}" FontSize="26"
+                   HorizontalAlignment="Center" />
+        <TextBlock Text="登录或创建一个账号。每个账号的心情、投喂、运动和出游都独立保存。"
+                   Foreground="{StaticResource Muted}" FontSize="10.5" TextAlignment="Center" TextWrapping="Wrap"
+                   Margin="0,6,0,12" LineHeight="17" />
+
+        <Border Background="{StaticResource Paper2}" CornerRadius="999" Padding="4" Margin="0,0,0,14">
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button x:Name="LoginTab" Content="登录" Grid.Column="0" Click="LoginTab_Click"
+                    Style="{StaticResource AuthTab}" Background="{StaticResource Ink}" Foreground="{StaticResource Paper}" />
+            <Button x:Name="RegisterTab" Content="创建账号" Grid.Column="1" Click="RegisterTab_Click"
+                    Style="{StaticResource AuthTab}" Background="Transparent" Foreground="{StaticResource Muted}" />
+          </Grid>
+        </Border>
+
+        <TextBlock Text="账号" FontSize="10" Foreground="{StaticResource Muted}" Margin="2,0,0,4" />
+        <TextBox x:Name="UserBox" Height="44" FontSize="14" Padding="12,0" VerticalContentAlignment="Center"
+                 BorderBrush="{StaticResource LineStrong}" Background="{StaticResource Paper}" MaxLength="20" />
+
+        <TextBlock Text="密码" FontSize="10" Foreground="{StaticResource Muted}" Margin="2,11,0,4" />
+        <PasswordBox x:Name="PassBox" Height="44" FontSize="14" Padding="12,0" VerticalContentAlignment="Center"
+                     BorderBrush="{StaticResource LineStrong}" Background="{StaticResource Paper}" MaxLength="72" />
+
+        <StackPanel x:Name="ConfirmPanel" Visibility="Collapsed">
+          <TextBlock Text="再输一次密码" FontSize="10" Foreground="{StaticResource Muted}" Margin="2,11,0,4" />
+          <PasswordBox x:Name="ConfirmBox" Height="44" FontSize="14" Padding="12,0" VerticalContentAlignment="Center"
+                       BorderBrush="{StaticResource LineStrong}" Background="{StaticResource Paper}" MaxLength="72" />
+        </StackPanel>
+
+        <TextBlock x:Name="ErrorText" Foreground="{StaticResource Danger}" FontSize="10.5" TextWrapping="Wrap"
+                   Margin="2,10,2,0" MinHeight="16" />
+
+        <Button x:Name="SubmitBtn" Style="{StaticResource PrimaryButton}" Content="登录并进入小屋"
+                Height="44" Margin="0,8,0,0" Click="Submit_Click" />
+      </StackPanel>
+
+      <StackPanel Grid.Row="2">
+        <Border Background="{StaticResource Paper2}" CornerRadius="12" Padding="11,8" Margin="0,12,0,8">
+          <StackPanel>
+            <TextBlock Text="手机 / 另一台设备" FontSize="8.5" Foreground="{StaticResource Muted}" />
+            <TextBlock x:Name="ServerInfo" FontFamily="Georgia" FontSize="10" Foreground="{StaticResource Ink2}"
+                       TextWrapping="Wrap" Margin="0,2,0,0" />
+            <TextBlock Text="在手机上打开上面的地址，登录同一个账号即可同步。"
+                       FontSize="9" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0" />
+          </StackPanel>
+        </Border>
+        <TextBlock Text="账号密码只保存在这台电脑的本地服务里" FontSize="8.5" Foreground="{StaticResource Muted}"
+                   HorizontalAlignment="Center" />
+      </StackPanel>
+    </Grid>
+  </Border>
+</Window>

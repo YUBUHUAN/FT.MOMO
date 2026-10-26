@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#fbf6ee">
+  <meta name="description" content="墨墨 · 一只住在桌面上的 INFP 小女孩">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="墨墨">
+  <title>墨墨 · 桌宠</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="mode-mobile" data-scene="home">
+  <div class="boot" id="boot">
+    <div class="boot-mark">
+      <img src="/assets/avatar-round.png" alt="">
+      <span>正在打开小屋</span>
+    </div>
+  </div>
+
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <div class="app" id="app">
+    <header class="topbar mobile-only">
+      <div class="who">
+        <span class="name" id="topName">墨墨</span>
+        <span class="sub" id="topSub">第 1 天 · 住在你的口袋里</span>
+      </div>
+      <div class="tools">
+        <span class="mood-chip" id="topMood">
+          <span class="emoji" id="topMoodEmoji">🍃</span>
+          <b id="topMoodValue">64</b>
+        </span>
+        <button class="icon-btn" id="bgBtn" aria-label="换小屋背景" title="换小屋背景">🎨</button>
+        <button class="icon-btn" id="openProfileTop" aria-label="打开个人页面" title="个人页面">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="8.4" r="3.6"></circle>
+            <path d="M5 20.2c.8-3.4 3.6-5.3 7-5.3s6.2 1.9 7 5.3"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="stage" id="stage">
+      <div class="scene-decor" id="sceneDecor" aria-hidden="true">
+        <div class="scene-window"><span></span></div>
+        <div class="scene-lamp">💡</div>
+        <div class="scene-plant">🪴</div>
+        <div class="scene-rug"></div>
+        <div class="scene-mote m1"></div>
+        <div class="scene-mote m2"></div>
+        <div class="scene-mote m3"></div>
+      </div>
+
+      <div class="pet-zone" id="petZone" role="button" tabindex="0" aria-label="摸摸墨墨">
+        <div class="pet-shadow"></div>
+        <div class="pet-body" id="petBody">
+          <img id="petImg" src="/assets/pet.png" alt="墨墨，黑发戴眼镜的小女孩">
+          <span class="eyelid left" aria-hidden="true"></span>
+          <span class="eyelid right" aria-hidden="true"></span>
+          <div class="fx-layer" id="fxLayer" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <div class="bubble" id="bubble" aria-live="polite">
+        <div class="bubble-text" id="bubbleText"></div>
+        <div class="bubble-mark" id="bubbleMark"></div>
+      </div>
+
+      <div class="mood-toast" id="moodToast"></div>
+
+      <section class="away-card hidden" id="awayCard" aria-live="polite">
+        <div class="away-scene" id="awayScene">
+          <div class="sun"></div>
+          <div class="hill"></div>
+          <div class="hill b"></div>
+          <div class="big-emoji" id="awayEmoji">🌳</div>
+        </div>
+        <div class="away-kicker">她出门了</div>
+        <div class="away-title" id="awayTitle">去公园走走</div>
+        <div class="away-count" id="awayCount">10:00</div>
+        <div class="away-note" id="awayNote">不用等她，她会自己看时间。</div>
+        <div class="away-actions">
+          <button class="btn small ghost" id="awayEarly">提前回来</button>
+          <button class="btn small soft" id="awayPeek">看看她</button>
+        </div>
+      </section>
+
+      <section class="away-card exercise-card hidden" id="exerciseCard" aria-live="polite">
+        <div class="away-scene exercise-scene" id="exerciseScene">
+          <div class="sun"></div>
+          <div class="hill"></div>
+          <div class="hill b"></div>
+          <div class="big-emoji" id="exerciseEmoji">🏃</div>
+          <div class="sweat s1">💧</div>
+          <div class="sweat s2">💧</div>
+        </div>
+        <div class="away-kicker" id="exerciseKicker">运动中</div>
+        <div class="away-title" id="exerciseTitle">在跑步</div>
+        <div class="away-count" id="exerciseCount">05:00</div>
+        <div class="away-note" id="exerciseNote">挥汗如雨。她说，再坚持一下就好。</div>
+        <div class="away-actions">
+          <button class="btn small ghost" id="exerciseEarly">让她停下</button>
+          <button class="btn small soft" id="exercisePeek">看看她</button>
+        </div>
+      </section>
+    </main>
+
+    <nav class="dock desktop-only" aria-label="快捷操作">
+      <button id="dockBackground" aria-label="换小屋背景" title="换小屋背景">
+        <span>🖼</span><span class="tip">换小屋背景</span>
+      </button>
+      <button id="dockFeed" aria-label="投喂" title="投喂">
+        <span>🧋</span><span class="tip">喂她吃点东西</span>
+      </button>
+      <button id="dockOuting" aria-label="出游" title="出游">
+        <span>🎒</span><span class="tip">让她出门走走</span>
+      </button>
+      <button id="dockExercise" aria-label="运动" title="运动">
+        <span>🏃</span><span class="tip">陪她动一动</span>
+      </button>
+      <button id="dockProfile" aria-label="个人页面" title="个人页面">
+        <span>📔</span><span class="tip">个人页面</span>
+      </button>
+    </nav>
+
+    <div class="sync-dot" id="syncDot" title="已和手机同步"></div>
+
+    <div class="statusline mobile-only">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">正在连接小屋</span>
+    </div>
+
+    <nav class="dock-mobile mobile-only" aria-label="操作">
+      <button class="dock-card" id="mFeed">
+        <span class="emoji">🧋</span>
+        <span class="label">投喂</span>
+      </button>
+      <button class="dock-card" id="mOuting">
+        <span class="emoji">🎒</span>
+        <span class="label">出游</span>
+      </button>
+      <button class="dock-card" id="mExercise">
+        <span class="emoji">🏃</span>
+        <span class="label">运动</span>
+      </button>
+      <button class="dock-card primary" id="mProfile">
+        <span class="emoji">📔</span>
+        <span class="label">手账</span>
+      </button>
+    </nav>
+  </div>
+
+  <section class="pair-screen hidden" id="authScreen" aria-label="登录">
+    <div class="pair-card auth-card">
+      <img src="/assets/avatar-round.png" alt="墨墨">
+      <h1>先给墨墨一间小屋</h1>
+      <p class="p-desc">登录或创建一个账号。<br>电脑和手机登录同一个账号，就会住进同一间小屋。</p>
+      <div class="auth-tabs" role="tablist">
+        <button class="auth-tab active" data-mode="login" role="tab" aria-selected="true">登录</button>
+        <button class="auth-tab" data-mode="register" role="tab" aria-selected="false">创建账号</button>
+      </div>
+      <input class="pair-input auth-input" id="authUser" maxlength="20" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="账号（2-20 个字符）" aria-label="账号">
+      <input class="pair-input auth-input" id="authPass" type="password" maxlength="72" autocomplete="current-password" placeholder="密码（至少 6 位）" aria-label="密码">
+      <input class="pair-input auth-input hidden" id="authPass2" type="password" maxlength="72" autocomplete="new-password" placeholder="再输一次密码" aria-label="确认密码">
+      <div class="pair-error" id="authError"></div>
+      <button class="btn primary block" id="authBtn">登录</button>
+      <p class="pair-hint">每个账号的心情、投喂、运动、出游和陪伴时间都独立保存。<br>手机打开电脑上的地址，登录同一个账号即可同步。</p>
+    </div>
+  </section>
+
+  <div class="ctx-menu hidden" id="ctxMenu" role="menu" aria-label="墨墨的菜单"></div>
+  <div class="sheet-host" id="sheetHost" aria-hidden="true">
+    <div class="sheet-backdrop" id="sheetBackdrop"></div>
+    <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="面板"></div>
+  </div>
+  <div class="modal-layer" id="modalLayer" aria-hidden="true"></div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="/shared/content.js"></script>
+  <script src="/shared/engine.js"></script>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
