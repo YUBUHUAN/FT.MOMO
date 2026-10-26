@@ -62,6 +62,33 @@ public sealed class ServerHost : IAsyncDisposable
         }
         Directory.CreateDirectory(dataDir);
         Directory.CreateDirectory(Path.Combine(dataDir, "states"));
+        if (string.IsNullOrWhiteSpace(envData))
+        {
+            // Some locked-down environments (and the DSH debug sandbox) deny
+            // Node writes outside the workspace even though the ACL is fine.
+            // Probe with the same bundled Node, then fall back to the app folder
+            // instead of leaving the whole app unable to start.
+            string selected = dataDir;
+            if (!CanNodeWrite(node, selected))
+            {
+                string fallback = Path.Combine(baseDir, "data");
+                try
+                {
+                    Directory.CreateDirectory(fallback);
+                    Directory.CreateDirectory(Path.Combine(fallback, "states"));
+                    if (!HasUsefulData(fallback) && HasUsefulData(selected))
+                        CopyDirectory(selected, fallback);
+                    dataDir = fallback;
+                    try
+                    {
+                        File.AppendAllText(Path.Combine(fallback, "fallback.log"),
+                            $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Node cannot write {selected}; using {fallback}{Environment.NewLine}");
+                    }
+                    catch { }
+                }
+                catch { }
+            }
+        }
         string logPath = Path.Combine(dataDir, "server.log");
 
         int port = FindPort(8787);
@@ -117,6 +144,42 @@ public sealed class ServerHost : IAsyncDisposable
         {
             try { proc.Kill(true); } catch { }
             throw;
+        }
+    }
+
+    private static bool CanNodeWrite(string node, string dir)
+    {
+        string probe = Path.Combine(dir, ".node-probe-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(probe);
+            var psi = new ProcessStartInfo
+            {
+                FileName = node,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            psi.ArgumentList.Add("-e");
+            psi.ArgumentList.Add("const fs=require('fs'); const p=process.argv[1]; fs.writeFileSync(p+'/ok','1');");
+            psi.ArgumentList.Add(probe);
+            using var proc = Process.Start(psi);
+            if (proc == null) return false;
+            if (!proc.WaitForExit(6000))
+            {
+                try { proc.Kill(true); } catch { }
+                return false;
+            }
+            return proc.ExitCode == 0 && File.Exists(Path.Combine(probe, "ok"));
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            try { Directory.Delete(probe, recursive: true); } catch { }
         }
     }
 

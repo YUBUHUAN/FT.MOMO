@@ -51,7 +51,7 @@ Windows 用户推荐直接运行 `MomoPet-Setup-1.2.0.exe`，会安装到 `%LOCA
 
 如果 `启动墨墨.cmd` 打开后没有出现窗口，黑窗口会停住并显示原因；也可以直接双击 `MomoPet.exe`（需要系统已装 .NET 10），或把同目录的 `startup.log` 发给我。
 
-> 程序可以整个文件夹搬到别的目录；账号、密码、设置和记录默认保存在 **`%LOCALAPPDATA%\MomoPet\data`**，升级/替换程序文件夹不会丢。旧版放在程序旁的 `data\` 或 `desktop-settings.json` 会在第一次启动时自动迁移到新位置。
+> 程序可以整个文件夹搬到别的目录；账号、密码、设置和记录默认保存在 **`%LOCALAPPDATA%\MomoPet\data`**，升级/替换程序文件夹不会丢。旧版放在程序旁的 `data\` 或 `desktop-settings.json` 会在第一次启动时自动迁移到新位置。若系统/杀毒软件连 LocalAppData 都禁止 Node 写入，程序会自动回退到程序旁的 `data\` 并在 `fallback.log` 记录（这种情况升级时请保留该文件夹）。
 
 ### 桌面端操作
 
@@ -192,7 +192,7 @@ Android 端提供两种方式：
 └──────────────────────┘
 ```
 
-- **账号**：用户名 + 密码注册；密码使用 `scrypt` 加盐哈希，账号文件里没有明文密码。登录后发一个随机 token，桌面端存在 `desktop-settings.json`，手机存在 `localStorage`。
+- **账号**：用户名 + 密码注册；密码使用 `scrypt` 加盐哈希，账号文件里没有明文密码。登录后发一个随机 token，桌面端存在 `%LOCALAPPDATA%\MomoPet\desktop-settings.json`，手机存在 `localStorage`。
 - **数据隔离**：每个账号一个 `%LOCALAPPDATA%\MomoPet\data\states\<账号ID>.json`，心情/投喂/运动/出游/陪伴时间完全独立；SSE 只向该账号的客户端推送。
 - **服务端**：`server/server.js`，零第三方依赖。PC 端启动时自动拉起，数据固定保存在 `%LOCALAPPDATA%\MomoPet\data`；旧版程序旁的 `data\` 会自动迁移过来。
 - **PC 端**：`desktop-native/`，WPF 原生窗口 + 内置 Node 服务端 + 登录窗口。每 4 秒拉取一次状态，所以手机上的操作几秒内就能看到。
