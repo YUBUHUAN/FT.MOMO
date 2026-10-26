@@ -1,0 +1,63 @@
+name: build-and-release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows-portable:
+    runs-on: windows-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Provide bundled node.exe
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path desktop-native/node | Out-Null
+          $node = (Get-Command node).Source
+          Copy-Item $node desktop-native/node/node.exe -Force
+          dotnet --list-runtimes
+
+      - name: Build portable app
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-native.ps1
+
+      - name: Package release
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ([string]::IsNullOrWhiteSpace($tag) -or $tag -eq "main") { $tag = "v1.1.0" }
+          Compress-Archive -Path "dist/MomoPet-Windows-Portable/*" -DestinationPath "MomoPet-Windows-Portable-$tag.zip" -CompressionLevel Optimal
+          Get-Item "MomoPet-Windows-Portable-$tag.zip" | Select-Object Name, Length
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ([string]::IsNullOrWhiteSpace($tag) -or $tag -eq "main") { $tag = "v1.1.0" }
+          $asset = "MomoPet-Windows-Portable-$tag.zip"
+          gh release create $tag $asset `
+            --title "墨墨桌宠 $tag" `
+            --notes "Windows 便携版：解压后双击 启动墨墨.cmd。首次打开先创建或登录账号。" `
+            --verify-tag
