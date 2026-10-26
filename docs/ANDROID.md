@@ -1,12 +1,35 @@
 # Android 端
 
-这一版 Android 使用 **PWA（可安装网页应用）**。它和 Windows 端共用同一套 `web/` 界面、同一个 Node 服务端和账号系统，因此登录同一个账号就能互通。
+Android 端有两种用法：现成 APK，或直接使用 PWA。两者都连接电脑上的墨墨服务端，共用账号系统。
 
-当前环境没有 Android SDK / JDK，**不能在这里直接产出 APK**；下面给出三种可用路径。
+## 方案 A：APK（推荐）
+
+安装包：`dist/MomoPet-Android-1.2.0.apk`（包名 `com.momopet.app`，最低 Android 7）。
+
+1. 在安卓手机上安装 APK（首次可能需要在系统设置里允许“安装未知应用”）。
+2. 打开「墨墨桌宠」，填写电脑上显示的地址，例如：
+   ```
+   http://192.168.1.8:8787
+   ```
+   地址在电脑的「个人页面 → 账号与同步」里。
+3. 手机和电脑连同一个 Wi-Fi，进入登录页后登录同一个账号。
+4. 右上角的 ⚙ 可以随时更换电脑地址。
+
+APK 只是一个轻量 WebView 壳，不内置电脑端服务端；电脑关机或手机不在同一 Wi-Fi 时打不开。
+
+### 从源码重新构建 APK
+
+源码在 `android/`，构建需要 JDK 17、Android SDK platform 35 与 build-tools 35：
+
+```bash
+# 设置 JAVA_HOME / ANDROID_SDK_ROOT 后
+# 用 aapt2 + javac + d8 + zipalign + apksigner 编译
+# 步骤见 android/README.md
+```
 
 ---
 
-## 方案 A：直接当 PWA 用（最快，推荐）
+## 方案 B：直接当 PWA 用
 
 1. 电脑启动墨墨（会自动启动同步服务端，默认端口 `8787`）。
 2. 手机和电脑连同一个 Wi-Fi。
@@ -24,7 +47,7 @@
 
 ---
 
-## 方案 B：Capacitor 包一层 APK（需要 Android Studio）
+## 方案 C：Capacitor 包一层 APK（需要 Android Studio）
 
 思路：APK 只是一个 WebView 外壳，直接加载电脑上的 `http://<电脑IP>:8787/`。  
 适合“家里/宿舍固定电脑 + 手机同一 Wi-Fi”的使用方式。
@@ -89,7 +112,7 @@ npx cap open android
 
 ---
 
-## 方案 C：`adb reverse` + localhost，获得完整 PWA 能力
+## 方案 D：`adb reverse` + localhost，获得完整 PWA 能力
 
 如果只是想在这台电脑上把 PWA 完整装进手机（Service Worker、离线壳、安装提示），可以临时用 USB 把手机的 localhost 映射到电脑：
 

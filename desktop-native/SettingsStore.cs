@@ -22,25 +22,60 @@ public static class SettingsStore
 
     private static string ResolveDir()
     {
-        string baseDir = AppContext.BaseDirectory;
+        // Settings (including the login token) must survive replacing the app
+        // folder when a new version is installed.
+        string stable = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MomoPet");
         try
         {
-            string probe = Path.Combine(baseDir, ".write-test");
+            Directory.CreateDirectory(stable);
+            string probe = Path.Combine(stable, ".write-test");
             File.WriteAllText(probe, "1");
             File.Delete(probe);
-            return baseDir;
+            return stable;
         }
         catch
         {
-            string fallback = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MomoPet");
-            Directory.CreateDirectory(fallback);
-            return fallback;
+            string roaming = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MomoPet");
+            try
+            {
+                Directory.CreateDirectory(roaming);
+                return roaming;
+            }
+            catch
+            {
+                return AppContext.BaseDirectory;
+            }
         }
     }
+
+    private static void MigrateLegacySettings()
+    {
+        if (File.Exists(FilePath)) return;
+        string baseSettings = Path.Combine(AppContext.BaseDirectory, "desktop-settings.json");
+        string roamingSettings = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MomoPet", "desktop-settings.json");
+        foreach (string candidate in new[] { baseSettings, roamingSettings })
+        {
+            try
+            {
+                if (!File.Exists(candidate)) continue;
+                if (string.Equals(Path.GetFullPath(candidate), Path.GetFullPath(FilePath), StringComparison.OrdinalIgnoreCase))
+                    continue;
+                Directory.CreateDirectory(Dir);
+                File.Copy(candidate, FilePath, overwrite: false);
+                return;
+            }
+            catch { }
+        }
+    }
+
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     public static AppSettings Load()
     {
+        MigrateLegacySettings();
         try
         {
             if (File.Exists(FilePath))

@@ -86,11 +86,27 @@ public partial class AuthWindow : Window
 
         SubmitBtn.IsEnabled = false;
         SubmitBtn.Content = _register ? "正在布置小屋…" : "正在开门…";
+        ErrorText.Foreground = (Brush)FindResource("Danger");
         ErrorText.Text = "";
         try
         {
-            if (_register) await _api.RegisterAsync(username, password);
-            else await _api.LoginAsync(username, password);
+            if (_register)
+            {
+                await _api.RegisterAsync(username, password);
+                // Do not auto-enter: create the account, return to the login tab,
+                // and let the user type the password again. This also avoids a
+                // half-created session being used before the user confirms it.
+                try { await _api.LogoutAsync(); } catch { }
+                SetMode(false);
+                UserBox.Text = username;
+                PassBox.Clear();
+                ConfirmBox.Clear();
+                ErrorText.Foreground = (Brush)FindResource("SageDeep");
+                ErrorText.Text = "账号创建成功，请输入密码登录。";
+                PassBox.Focus();
+                return;
+            }
+            await _api.LoginAsync(username, password);
             DialogResult = true;
             Close();
         }

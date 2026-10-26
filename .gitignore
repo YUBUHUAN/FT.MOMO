@@ -3,6 +3,9 @@ desktop-native/bin/
 desktop-native/obj/
 desktop-native/node/
 dist/
+android/build/
+android/keystore/
+tools/android-toolchain/
 .dotnet/
 .nuget/
 .appdata/

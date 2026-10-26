@@ -1,6 +1,6 @@
 {
   "name": "momo-pet",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "墨墨 · 桌宠：Windows 原生桌宠 + Android PWA + 账号同步服务端",
   "scripts": {

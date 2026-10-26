@@ -12,7 +12,7 @@ permissions:
 jobs:
   windows-portable:
     runs-on: windows-latest
-    timeout-minutes: 40
+    timeout-minutes: 50
 
     steps:
       - name: Checkout
@@ -41,23 +41,57 @@ jobs:
         run: |
           powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-native.ps1
 
-      - name: Package release
+      - name: Install NSIS
         shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"
-          if ([string]::IsNullOrWhiteSpace($tag) -or $tag -eq "main") { $tag = "v1.1.0" }
-          Compress-Archive -Path "dist/MomoPet-Windows-Portable/*" -DestinationPath "MomoPet-Windows-Portable-$tag.zip" -CompressionLevel Optimal
-          Get-Item "MomoPet-Windows-Portable-$tag.zip" | Select-Object Name, Length
+          choco install nsis -y --no-progress
+
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-installer.ps1
+
+      - name: Package portable zip
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist/MomoPet-Windows-Portable/*" -DestinationPath "MomoPet-Windows-Portable-v1.2.0.zip" -CompressionLevel Optimal
+          Get-Item "MomoPet-Windows-Portable-v1.2.0.zip", "dist/MomoPet-Setup-1.2.0.exe" | Select-Object Name, Length
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-package
+          path: |
+            MomoPet-Windows-Portable-v1.2.0.zip
+            dist/MomoPet-Setup-1.2.0.exe
+          retention-days: 7
+
+  release:
+    needs: windows-portable
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Windows package
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-package
+          path: release-assets
+
+      - name: List assets
+        run: ls -lh release-assets android/release
 
       - name: Create GitHub Release
-        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "${{ github.ref_name }}"
-          if ([string]::IsNullOrWhiteSpace($tag) -or $tag -eq "main") { $tag = "v1.1.0" }
-          $asset = "MomoPet-Windows-Portable-$tag.zip"
-          gh release create $tag $asset `
-            --title "墨墨桌宠 $tag" `
-            --notes "Windows 便携版：解压后双击 启动墨墨.cmd。首次打开先创建或登录账号。" `
+          gh release create v1.2.0 \
+            release-assets/MomoPet-Windows-Portable-v1.2.0.zip \
+            release-assets/MomoPet-Setup-1.2.0.exe \
+            android/release/MomoPet-Android-1.2.0.apk \
+            --title "墨墨桌宠 v1.2.0" \
+            --notes "Windows 安装版、Windows 便携版、Android APK。首次打开先创建或登录账号；Android 安装后填写电脑上「个人页面 → 账号与同步」里的地址。" \
             --verify-tag

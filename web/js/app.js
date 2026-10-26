@@ -237,8 +237,9 @@ function setAuthMode(mode) {
     tab.setAttribute("aria-selected", on ? "true" : "false");
   });
   els.authPass2.classList.toggle("hidden", mode !== "register");
-  els.authBtn.textContent = mode === "register" ? "创建并进入小屋" : "登录";
+  els.authBtn.textContent = mode === "register" ? "创建账号" : "登录";
   els.authError.textContent = "";
+  els.authError.classList.remove("ok");
   els.authPass.autocomplete = mode === "register" ? "new-password" : "current-password";
 }
 
@@ -896,6 +897,19 @@ async function submitAuth() {
   els.authError.textContent = "";
   try {
     const api = await Api.auth(username, password, S.authMode, S.bootstrap);
+    if (S.authMode === "register") {
+      await api.logout();
+      Api.clearAuth();
+      setAuthMode("login");
+      els.authUser.value = username;
+      els.authPass.value = "";
+      els.authPass2.value = "";
+      els.authError.classList.add("ok");
+      els.authError.textContent = "账号创建成功，请输入密码登录。";
+      els.authPass.focus();
+      els.authBtn.disabled = false;
+      return;
+    }
     S.api = api;
     const state = await api.state();
     els.auth.classList.add("hidden");
@@ -918,6 +932,7 @@ async function submitAuth() {
       network: "连不上这台电脑",
       auth_failed: "没有成功，再试一次吧"
     };
+    els.authError.classList.remove("ok");
     els.authError.textContent = map[err.message] || "没有成功，再试一次吧";
     els.authBtn.disabled = false;
     els.authBtn.textContent = S.authMode === "register" ? "创建并进入小屋" : "登录";

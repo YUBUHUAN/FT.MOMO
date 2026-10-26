@@ -1885,3 +1885,11 @@ body[data-scene="garden"] {
   margin-top: 1px;
   line-height: 1.45;
 }
+
+
+.pair-error.ok {
+  color: var(--sage-deep);
+  background: rgba(169, 183, 163, 0.14);
+  border-radius: 8px;
+  padding: 6px 8px;
+}

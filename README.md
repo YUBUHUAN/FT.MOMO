@@ -31,15 +31,19 @@
 打包好的程序在：
 
 ```
-dist/MomoPet-Windows-Portable/
+dist/MomoPet-Setup-1.2.0.exe        ← 给别的电脑装，带卸载器
+dist/MomoPet-Windows-Portable/      ← 免安装便携版
+dist/MomoPet-Android-1.2.0.apk      ← 安卓安装包
 ```
+
+Windows 用户推荐直接运行 `MomoPet-Setup-1.2.0.exe`，会安装到 `%LOCALAPPDATA%\Programs\MomoPet` 并创建桌面/开始菜单快捷方式。便携版则解压后：
 
 - **推荐**：双击 `启动墨墨.cmd`。它会带上随包的 .NET 运行时，不要求电脑预装 .NET。
 - `启动墨墨.vbs` 是无窗口版；部分电脑禁用了 Windows Script Host，双击 VBS 会没反应——这时用 `启动墨墨.cmd` 就好。
 - 也可以直接运行 `MomoPet.exe`（需要系统已安装 .NET 10 Desktop Runtime）。
 - 轻量版（不附带 .NET 运行时）在 `dist/MomoPet-Windows/MomoPet.exe`，体积更小。
 
-第一次启动会先出现**登录 / 创建账号**窗口：
+第一次启动会先出现**登录 / 创建账号**窗口。创建账号后会回到登录页，再输入一次密码即可进入：
 
 ![登录](docs/images/pc-auth.png)
 
@@ -47,7 +51,7 @@ dist/MomoPet-Windows-Portable/
 
 如果 `启动墨墨.cmd` 打开后没有出现窗口，黑窗口会停住并显示原因；也可以直接双击 `MomoPet.exe`（需要系统已装 .NET 10），或把同目录的 `startup.log` 发给我。
 
-> 程序是绿色便携版，可以整个文件夹搬到别的目录；账号数据默认就在程序旁边的 `data\` 文件夹里，整个文件夹可以一起搬走。
+> 程序可以整个文件夹搬到别的目录；账号、密码、设置和记录默认保存在 **`%LOCALAPPDATA%\MomoPet\data`**，升级/替换程序文件夹不会丢。旧版放在程序旁的 `data\` 或 `desktop-settings.json` 会在第一次启动时自动迁移到新位置。
 
 ### 桌面端操作
 
@@ -65,7 +69,12 @@ dist/MomoPet-Windows-Portable/
 
 ## 账号与手机同步
 
-Android 端是**可安装的网页应用（PWA）**：不用装 APK，同一套界面、同一个账号，数据实时同步。
+Android 端提供两种方式：
+
+- **APK**：`dist/MomoPet-Android-1.2.0.apk`，安装后第一次填写电脑上显示的地址（如 `http://192.168.1.8:8787`），再登录账号。
+- **PWA**：手机 Chrome 打开同一个地址，添加到主屏幕。
+
+两种方式共用同一套界面和账号，数据实时同步。
 
 1. 电脑和手机连**同一个 Wi-Fi**。
 2. 第一次在电脑上打开墨墨时，创建账号（例如 `momo` / 自己的密码）。
@@ -87,7 +96,7 @@ Android 端是**可安装的网页应用（PWA）**：不用装 APK，同一套�
 - 关掉手机页面，她还在电脑上；电脑关掉，手机就连不上这间小屋。
 
 > **每个账号的数据是独立的。** 同一个服务器上可以创建多个账号；退出账号后重新登录另一个账号，会进入另一间小屋。  
-> **限制**：这一版需要电脑开着、手机和电脑在同一网络；账号保存在这台电脑的 `data/` 里，没有云端同步。APK 打包步骤见 [docs/ANDROID.md](docs/ANDROID.md)。  
+> **限制**：这一版需要电脑开着、手机和电脑在同一网络；账号保存在 `%LOCALAPPDATA%\MomoPet\data`，没有云端同步。APK / 安装包说明见 [docs/ANDROID.md](docs/ANDROID.md)。  
 > PWA 完整安装（带离线缓存）需要 HTTPS 或 localhost；局域网 HTTP 下 Chrome 仍然可以「添加到主屏幕」，只是更像一个快捷方式。
 
 ---
@@ -184,8 +193,8 @@ Android 端是**可安装的网页应用（PWA）**：不用装 APK，同一套�
 ```
 
 - **账号**：用户名 + 密码注册；密码使用 `scrypt` 加盐哈希，账号文件里没有明文密码。登录后发一个随机 token，桌面端存在 `desktop-settings.json`，手机存在 `localStorage`。
-- **数据隔离**：每个账号一个 `data/states/<账号ID>.json`，心情/投喂/运动/出游/陪伴时间完全独立；SSE 只向该账号的客户端推送。
-- **服务端**：`server/server.js`，零第三方依赖。PC 端启动时自动拉起，默认用程序旁的 `data\` 持久化（只读目录时回退到 `%APPDATA%\MomoPet\data`）。
+- **数据隔离**：每个账号一个 `%LOCALAPPDATA%\MomoPet\data\states\<账号ID>.json`，心情/投喂/运动/出游/陪伴时间完全独立；SSE 只向该账号的客户端推送。
+- **服务端**：`server/server.js`，零第三方依赖。PC 端启动时自动拉起，数据固定保存在 `%LOCALAPPDATA%\MomoPet\data`；旧版程序旁的 `data\` 会自动迁移过来。
 - **PC 端**：`desktop-native/`，WPF 原生窗口 + 内置 Node 服务端 + 登录窗口。每 4 秒拉取一次状态，所以手机上的操作几秒内就能看到。
 - **手机端**：`web/` 同一套页面，SSE 实时推送，心跳每 15 秒。
 - **陪伴时间**：服务端按心跳去重累计，两台设备同时开着也只算一份。
@@ -216,12 +225,12 @@ Android 端是**可安装的网页应用（PWA）**：不用装 APK，同一套�
 │  ├─ build-native.ps1          重新发布 Windows 便携版
 │  └─ capture.mjs               Chrome 无头截图 / 交互回归
 ├─ docs/
-│  ├─ ANDROID.md                PWA 安装与 APK（Capacitor）打包说明
+│  ├─ ANDROID.md                APK 安装、PWA 安装与打包说明
 │  └─ images/                   README 截图
 ├─ dist/
 │  ├─ MomoPet-Windows-Portable/ 推荐：双击 启动墨墨.cmd
 │  ├─ MomoPet-Windows/          轻量版：需要 .NET 10 Desktop Runtime
-│  └─ ...                       数据默认在同目录 data/
+│  └─ ...                       数据在 %LOCALAPPDATA%\MomoPet\data（升级不丢）
 ├─ test/                        接口回归与环境检查
 └─ start-server.cmd             只启动服务端（给手机用，或开发调试）
 ```
@@ -287,8 +296,7 @@ node tools\capture.mjs profile
 
 ## 已知限制
 
-1. **Android 端目前是 PWA，不是 APK**：当前开发环境没有 Android SDK / JDK，无法在此处产出签名 APK。  
-   `docs/ANDROID.md` 给出了两种补齐方式：直接装 PWA，或用 Capacitor 包一层 WebView 生成 APK。
+1. **Android APK 是轻量 WebView 壳**：它连接电脑上运行的墨墨服务端，不内置 Node/账号数据；电脑关机或不在同一 Wi-Fi 时无法使用。也可以继续用 PWA 方式。
 2. **同步依赖局域网**：PC 端内置服务端，手机需要和 PC 在同一 Wi-Fi；公网访问需要把 `server/` 单独部署到可访问的机器上。账号系统已经做了，但当前没有云端账号服务。
 3. **HTTP 下的 PWA**：Chrome 对局域网 HTTP 页面不提供完整安装/SW 能力；「添加到主屏幕」可用，但离线缓存需要 HTTPS 或 `localhost`。
 4. **系统表情**：Windows 的 WPF 会把 emoji 渲染成单色线稿（这正是当前视觉的一部分）；不同 Windows 版本的字体略有差异。

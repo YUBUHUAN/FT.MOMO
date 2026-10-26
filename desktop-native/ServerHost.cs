@@ -32,30 +32,36 @@ public sealed class ServerHost : IAsyncDisposable
         if (!File.Exists(node)) throw new FileNotFoundException("找不到内置的 node.exe", node);
         if (!File.Exists(serverJs)) throw new FileNotFoundException("找不到同步服务端文件", serverJs);
 
-        // Portable by default: keep the room next to the executable so moving the
-        // folder moves her data too. Fall back to AppData if this folder is read-only.
-        string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MomoPet");
-        string dataDir = Path.Combine(baseDir, "data");
+        // Data lives in LocalAppData so replacing/updating the app folder never
+        // wipes accounts or the pet's history. Older portable data is migrated
+        // once, on the first launch after this change.
         string? envData = Environment.GetEnvironmentVariable("MOMO_DATA");
+        string dataDir;
         if (!string.IsNullOrWhiteSpace(envData))
         {
             dataDir = envData;
         }
         else
         {
+            dataDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "MomoPet", "data");
+            string roaming = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MomoPet", "data");
             try
             {
                 Directory.CreateDirectory(dataDir);
-                string probe = Path.Combine(dataDir, ".write-test");
-                File.WriteAllText(probe, "1");
-                File.Delete(probe);
+                MigrateLegacyData(Path.Combine(baseDir, "data"), dataDir);
+                MigrateLegacyData(roaming, dataDir);
             }
             catch
             {
-                dataDir = Path.Combine(appData, "data");
+                // Last resort: keep working next to the executable.
+                dataDir = Path.Combine(baseDir, "data");
             }
         }
         Directory.CreateDirectory(dataDir);
+        Directory.CreateDirectory(Path.Combine(dataDir, "states"));
         string logPath = Path.Combine(dataDir, "server.log");
 
         int port = FindPort(8787);
@@ -111,6 +117,59 @@ public sealed class ServerHost : IAsyncDisposable
         {
             try { proc.Kill(true); } catch { }
             throw;
+        }
+    }
+
+    private static void MigrateLegacyData(string source, string destination)
+    {
+        try
+        {
+            if (!Directory.Exists(source)) return;
+            if (string.Equals(Path.GetFullPath(source), Path.GetFullPath(destination), StringComparison.OrdinalIgnoreCase)) return;
+            if (!HasUsefulData(source) || HasUsefulData(destination)) return;
+            Directory.CreateDirectory(destination);
+            CopyDirectory(source, destination);
+            try
+            {
+                File.AppendAllText(Path.Combine(destination, "migration.log"),
+                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] migrated data from {source}{Environment.NewLine}");
+            }
+            catch { }
+        }
+        catch { }
+    }
+
+    private static bool HasUsefulData(string dir)
+    {
+        try
+        {
+            string accounts = Path.Combine(dir, "accounts.json");
+            if (File.Exists(accounts))
+            {
+                JsonNode? root = JsonNode.Parse(File.ReadAllText(accounts));
+                if (root?["accounts"] is JsonArray arr && arr.Count > 0) return true;
+            }
+            string states = Path.Combine(dir, "states");
+            if (Directory.Exists(states) && Directory.EnumerateFiles(states, "*.json").Any()) return true;
+            string rooms = Path.Combine(dir, "rooms");
+            if (Directory.Exists(rooms) && Directory.EnumerateFiles(rooms, "*.json").Any()) return true;
+        }
+        catch { }
+        return false;
+    }
+
+    private static void CopyDirectory(string source, string destination)
+    {
+        foreach (string file in Directory.EnumerateFiles(source))
+        {
+            string target = Path.Combine(destination, Path.GetFileName(file));
+            File.Copy(file, target, overwrite: true);
+        }
+        foreach (string dir in Directory.EnumerateDirectories(source))
+        {
+            string target = Path.Combine(destination, Path.GetFileName(dir));
+            Directory.CreateDirectory(target);
+            CopyDirectory(dir, target);
         }
     }
 

@@ -336,7 +336,12 @@ async function main() {
         document.getElementById('authBtn').click();
         return true;
       })()`);
-      await sleep(1600);
+      await sleep(1100);
+      await cdp.screenshot("auth-created.png");
+      const created = await cdp.eval(`(() => ({authVisible: !document.getElementById('authScreen').classList.contains('hidden'), notice: document.getElementById('authError').textContent, mode: document.querySelector('.auth-tab.active')?.dataset.mode}))()`);
+      console.log("after register", created);
+      await cdp.eval(`(() => { document.getElementById('authPass').value = 'webpass123'; document.getElementById('authBtn').click(); return true; })()`);
+      await sleep(1800);
       await cdp.screenshot("auth-logged-in.png");
       const after = await cdp.eval(`(() => ({auth: document.getElementById('authScreen').classList.contains('hidden'), name: document.getElementById('topName').textContent}))()`);
       console.log("after login", after);
