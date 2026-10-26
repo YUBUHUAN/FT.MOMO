@@ -82,23 +82,33 @@ jobs:
           path: release-assets
 
       - name: List assets
-        run: ls -lh release-assets android/release
+        run: find release-assets -type f -printf '%p %s\n' | sort
 
       - name: Create draft GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v1.2.0 android/release/MomoPet-Android-1.2.0.apk             --title "墨墨桌宠 v1.2.0"             --notes "Windows 安装版、Windows 便携版、Android APK。首次打开先创建或登录账号；Android 安装后填写电脑上「个人页面 → 账号与同步」里的地址。"             --verify-tag --draft
+          gh release delete v1.2.0 --yes 2>/dev/null || true
+          gh release create v1.2.0 android/release/MomoPet-Android-1.2.0.apk \
+            --title "墨墨桌宠 v1.2.0" \
+            --notes "Windows 安装版、Windows 便携版、Android APK。首次打开先创建或登录账号；Android 安装后填写电脑上「个人页面 → 账号与同步」里的地址。" \
+            --verify-tag --draft
 
       - name: Upload Windows setup
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload v1.2.0 release-assets/MomoPet-Setup-1.2.0.exe --clobber
+        run: |
+          SETUP=$(find release-assets -name 'MomoPet-Setup-1.2.0.exe' -print -quit)
+          echo "setup=$SETUP"
+          gh release upload v1.2.0 "$SETUP" --clobber
 
       - name: Upload portable zip
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload v1.2.0 release-assets/MomoPet-Windows-Portable-v1.2.0.zip --clobber
+        run: |
+          ZIP=$(find release-assets -name 'MomoPet-Windows-Portable-v1.2.0.zip' -print -quit)
+          echo "zip=$ZIP"
+          gh release upload v1.2.0 "$ZIP" --clobber
 
       - name: Publish release
         env:
