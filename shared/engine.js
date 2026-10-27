@@ -20,6 +20,12 @@
   const MAX_EXERCISE_HISTORY = 20;
   const MAX_DAILY = 60;
   const TAP_WINDOW_MS = 1500;
+  const FULLNESS_PER_HOUR = 1.2;
+  const FATIGUE_PER_HOUR = 1.0;
+  const HEALTH_PER_HOUR = 0.35;
+  const HUNGRY_AT = 25;
+  const STARVING_AT = 10;
+  const VITALS_STEP_MS = 36000;
 
   function clamp(n, lo, hi) {
     return Math.max(lo, Math.min(hi, n));
@@ -69,6 +75,8 @@
       background: "home",
       createdAt: now.toISOString(),
       lastCareAt: now.toISOString(),
+      lastVitalsAt: now.toISOString(),
+      lastHungerLevel: "ok",
       lastInteractionAt: now.toISOString(),
       lastSeenAt: null,
       lastHeartbeatAt: null,
@@ -106,6 +114,54 @@
     return true;
   }
 
+  function hungerLevel(state) {
+    const fullness = Number(state.fullness) || 0;
+    if (fullness <= STARVING_AT) return "starving";
+    if (fullness <= HUNGRY_AT) return "hungry";
+    return "ok";
+  }
+
+  function applyVitals(state, now, events) {
+    const last = Date.parse(state.lastVitalsAt || state.lastCareAt || state.createdAt || 0);
+    if (!last) {
+      state.lastVitalsAt = new Date(now).toISOString();
+      state.lastHungerLevel = hungerLevel(state);
+      return;
+    }
+    const elapsed = now - last;
+    if (elapsed < VITALS_STEP_MS) return;
+
+    const hours = Math.max(0, elapsed / 3600000);
+    const beforeFullness = Number(state.fullness) || 0;
+    state.fullness = round1(clamp(beforeFullness - hours * FULLNESS_PER_HOUR, 0, 100));
+    state.fatigue = round1(clamp((Number(state.fatigue) || 0) - hours * FATIGUE_PER_HOUR, 0, 100));
+
+    // Health drops slowly all the time, faster when she is hungry or very tired.
+    let healthRate = HEALTH_PER_HOUR;
+    if (state.fullness <= HUNGRY_AT) healthRate += 0.25;
+    if (state.fullness <= STARVING_AT) healthRate += 0.45;
+    if (state.fatigue >= 82) healthRate += 0.2;
+    state.health = round1(clamp((Number(state.health) || 0) - hours * healthRate, 0, 100));
+
+    // Hunger drags her mood down a little.
+    if (state.fullness <= HUNGRY_AT) {
+      const moodRate = state.fullness <= STARVING_AT ? 0.55 : 0.22;
+      state.mood = round1(clamp((Number(state.mood) || 0) - hours * moodRate, MOOD_MIN, MOOD_MAX));
+    } else {
+      const lastTalk = Date.parse(state.lastInteractionAt || state.createdAt || now);
+      if (now - lastTalk > 8 * 3600000) {
+        state.mood = round1(clamp((Number(state.mood) || 0) - Math.min(7, hours * 0.32), MOOD_MIN, MOOD_MAX));
+      }
+    }
+
+    state.lastVitalsAt = new Date(now).toISOString();
+    const level = hungerLevel(state);
+    if (level !== (state.lastHungerLevel || "ok")) {
+      if (level !== "ok") events.push({ type: "hungry", level, fullness: state.fullness });
+      state.lastHungerLevel = level;
+    }
+  }
+
   function normalize(state, content, nowMs) {
     const now = nowMs || Date.now();
     const events = [];
@@ -119,18 +175,7 @@
     if (!state.totals) state.totals = {};
     state.totals.exercises = Number(state.totals.exercises) || 0;
 
-    const lastCare = Date.parse(state.lastCareAt || state.createdAt || now);
-    const hours = Math.max(0, (now - lastCare) / 3600000);
-    if (hours > 0.03) {
-      state.fullness = round1(clamp(state.fullness - hours * 1.6, 0, 100));
-      const lastTalk = Date.parse(state.lastInteractionAt || state.createdAt || now);
-      if (now - lastTalk > 8 * 3600000) {
-        state.mood = round1(clamp(state.mood - Math.min(7, hours * 0.42), MOOD_MIN, MOOD_MAX));
-      }
-      state.fatigue = round1(clamp(state.fatigue - hours * 2.2, 0, 100));
-      if (state.fatigue > 82) state.health = round1(clamp(state.health - hours * 0.55, 0, 100));
-      state.lastCareAt = new Date(now).toISOString();
-    }
+    applyVitals(state, now, events);
 
     if (state.exercise && now >= state.exercise.endsAt) {
       const result = finishExercise(state, content, now, false);
@@ -508,6 +553,10 @@
     if (recentSpam && (rng || Math.random)() < 0.9) {
       return pick(content.TAP_LINES.after_spam, rng);
     }
+    const level = hungerLevel(state);
+    if (level !== "ok" && content.HUNGER_LINES && content.HUNGER_LINES[level]) {
+      return pick(content.HUNGER_LINES[level], rng);
+    }
     const pool = [];
     const lastTalk = Date.parse(state.lastInteractionAt || 0);
     if (lastTalk && now - lastTalk > 45 * 60000) pool.push(...content.TAP_LINES.idle);
@@ -528,7 +577,10 @@
   function daysTogether(state, nowMs) {
     const start = Date.parse(state.createdAt || 0);
     if (!start) return 1;
-    return Math.max(1, Math.floor(((nowMs || Date.now()) - start) / 86400000) + 1);
+    const now = nowMs || Date.now();
+    // Count calendar days, not 24-hour periods: after midnight it becomes day 2
+    // even if the account was created less than 24 hours ago.
+    return Math.max(1, dayIndex(now) - dayIndex(start) + 1);
   }
 
   function sevenDay(state, nowMs) {
@@ -587,6 +639,7 @@
     spamText,
     setBackground,
     daysTogether,
+    hungerLevel,
     sevenDay,
     validateName,
     findFeed,

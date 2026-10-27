@@ -51,6 +51,8 @@ const els = {
   trips: $("#pTripList"),
   exercises: $("#pExerciseList"),
   pTag: $("#pTag"),
+  pVersion: $("#pVersion"),
+  pStorage: $("#pStorage"),
   accountName: $("#pAccountName"),
   serverLink: $("#pServerLink"),
   pairNote: $("#pPairNote"),
@@ -197,6 +199,8 @@ function render(state) {
   els.dialEmoji.textContent = mood.emoji;
   els.dialValue.textContent = Math.round(s.mood);
   els.pTag.textContent = `DAY ${String(days).padStart(2, "0")}`;
+  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.4.0"}`;
+  if (els.pStorage) els.pStorage.textContent = "云端同步 · 数据保存在 Supabase";
 
   const fullness = Number(s.fullness) || 0;
   els.fullValue.textContent = Math.round(fullness);
@@ -208,7 +212,11 @@ function render(state) {
       ? "有点饱，但还可以再吃一小口。"
       : fullness >= 40
       ? "肚子刚刚好，心情也刚刚好。"
-      : "肚子空空的，正好可以吃点东西。";
+      : fullness >= 25
+      ? "肚子空空的，正好可以吃点东西。"
+      : fullness >= 10
+      ? "她已经饿了，喂点东西吧。"
+      : "真的很饿了，再拖下去健康会变差。";
 
   const health = Number(s.health != null ? s.health : 70);
   const fatigue = Number(s.fatigue != null ? s.fatigue : 8);

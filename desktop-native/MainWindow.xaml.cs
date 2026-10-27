@@ -69,6 +69,7 @@ public partial class MainWindow : Window
     private bool _onlineToastShown;
     private bool _isAway;
     private bool _firstTipShown;
+    private string _lastHungerLevel = "";
     private bool _bubbleShowing;
     private bool _closing;
 
@@ -290,7 +291,7 @@ public partial class MainWindow : Window
     private void SetOnline(bool online)
     {
         SyncDot.Fill = online ? (Brush)FindResource("SageDeep") : (Brush)FindResource("Danger");
-        SyncDot.ToolTip = online ? "已和手机同步" : "离线 · 正在重连";
+        SyncDot.ToolTip = online ? "云端已连接" : "离线 · 正在重连";
         if (!online && !_onlineToastShown)
         {
             _onlineToastShown = true;
@@ -311,6 +312,17 @@ public partial class MainWindow : Window
         MoodEmoji.Text = Str(label, "emoji", "🍃");
         MoodValue.Text = Math.Round(mood).ToString(CultureInfo.InvariantCulture);
         MoodPill.ToolTip = $"{Str(label, "label")} · {Str(label, "note")}";
+        double fullness = Num(s, "fullness", 0);
+        string hunger = fullness <= 10 ? "starving" : fullness <= 25 ? "hungry" : "ok";
+        if (hunger != _lastHungerLevel)
+        {
+            if (hunger == "ok") _lastHungerLevel = "ok";
+            else if (!_bubbleShowing)
+            {
+                _lastHungerLevel = hunger;
+                ShowBubble(HungerLine(hunger), 6200);
+            }
+        }
 
         JsonNode? outingNode = s["outing"];
         bool away = outingNode is JsonObject;
@@ -1795,7 +1807,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.3 · 云同步 · 数据留在这台电脑上", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.4 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }
@@ -3019,7 +3031,13 @@ public partial class MainWindow : Window
     private static string FullnessNote(double v) => v >= 90 ? "真的吃不下了，再喂也只能看着。"
         : v >= 70 ? "有点饱，但还可以再吃一小口。"
         : v >= 40 ? "肚子刚刚好，心情也刚刚好。"
-        : "肚子空空的，正好可以吃点东西。";
+        : v >= 25 ? "肚子空空的，正好可以吃点东西。"
+        : v >= 10 ? "她已经饿了，喂点东西吧。"
+        : "真的很饿了，再拖下去健康会变差。";
+
+    private static string HungerLine(string level) => level == "starving"
+        ? "好饿……真的，肚子已经在抗议了。你先喂我一口好不好？"
+        : "肚子有点空了……你听，是不是在叫？";
 
     private int DaysTogether(JsonNode s)
     {

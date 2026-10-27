@@ -6,7 +6,7 @@
   if (typeof module === "object" && module.exports) module.exports = factory();
   else root.MomoContent = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  const VERSION = "1.3.0";
+  const VERSION = "1.4.0";
   const DEFAULT_NAME = "墨墨";
 
   const MOOD_LABELS = [
@@ -72,6 +72,23 @@
       "你再戳，我就要把你的手指画成小土豆了。",
       "呼……停一下啦。让我缓一缓。",
       "我知道你在逗我。我假装不知道。"
+    ]
+  };
+
+  const HUNGER_LINES = {
+    hungry: [
+      "肚子有点空了……你听，是不是在叫？",
+      "有点饿。不是特别饿，就是想吃一点热乎的。",
+      "我刚刚把最后一块饼干让给窗外的猫了。现在有点后悔。",
+      "如果现在有一杯奶茶，我会认真考虑原谅这个世界。",
+      "肚子空空的，连发呆都不太专心。"
+    ],
+    starving: [
+      "好饿……真的，肚子已经在抗议了。",
+      "我好像饿得有点头晕。你先喂我一口好不好？",
+      "再不吃东西，我就要把桌上的纸当成饼干了。",
+      "肚子在叫。很大声。我假装不是我的。",
+      "饿到没力气说话……但还是在等你。"
     ]
   };
 
@@ -938,6 +955,7 @@
     DEFAULT_NAME,
     MOOD_LABELS,
     TAP_LINES,
+    HUNGER_LINES,
     SPAM_MARKS,
     FEED,
     OUTINGS,

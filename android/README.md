@@ -1,6 +1,6 @@
 # Android APK（独立云同步版）
 
-`MomoPet-Android-1.3.0.apk` 是独立 App：内置 `web/` 页面和 `shared/` 引擎，直接连接 Supabase 云端。不需要电脑 IP，也不需要同一 Wi-Fi。
+`MomoPet-Android-1.4.0.apk` 是独立 App：内置 `web/` 页面和 `shared/` 引擎，直接连接 Supabase 云端。不需要电脑 IP，也不需要同一 Wi-Fi。
 
 ## 使用
 
@@ -24,7 +24,7 @@ bash tools/build-android-apk.sh
 - 把 `web/` 和 `shared/` 打包进 `android/assets/`；
 - 注入 `android/cloud-config.js`；
 - 用 `aapt2`、`javac`、`d8`、`zipalign`、`apksigner` 编译并签名；
-- 输出 `dist/MomoPet-Android-1.3.0.apk`。
+- 输出 `dist/MomoPet-Android-1.4.0.apk`。
 
 ## 云配置
 
@@ -42,4 +42,4 @@ window.MOMO_CLOUD = {
 
 ## 签名
 
-`android/keystore/` 不提交到仓库。更新 APK 必须继续使用同一个 keystore，否则 Android 会把它当成不同应用，需要先卸载旧版。当前 `android/release/MomoPet-Android-1.3.0.apk` 用本地 keystore 签名。
+`android/keystore/` 不提交到仓库。更新 APK 必须继续使用同一个 keystore，否则 Android 会把它当成不同应用，需要先卸载旧版。当前 `android/release/MomoPet-Android-1.4.0.apk` 用本地 keystore 签名。

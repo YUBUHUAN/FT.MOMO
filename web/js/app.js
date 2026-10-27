@@ -31,6 +31,7 @@ const S = {
   burstTimer: null,
   lastBurstAt: 0,
   lastBurstCount: 0,
+  lastHungerLevel: "",
   press: null,
   dragging: false,
   ignore: false,
@@ -172,6 +173,21 @@ function finishBoot() {
   renderScene();
   renderAway();
   renderExercise();
+}
+
+function maybeHungerNotice(s) {
+  const fullness = Number(s.fullness) || 0;
+  const level = fullness <= 10 ? "starving" : fullness <= 25 ? "hungry" : "ok";
+  if (level === S.lastHungerLevel) return;
+  if (level === "ok") {
+    S.lastHungerLevel = "ok";
+    return;
+  }
+  if (!S.bubble || els.bubble.classList.contains("show")) return;
+  const lines = C.HUNGER_LINES && C.HUNGER_LINES[level];
+  if (!lines || !lines.length) return;
+  S.lastHungerLevel = level;
+  S.bubble.show(pick(lines), { duration: 6200 });
 }
 
 function wireApi() {
@@ -475,6 +491,7 @@ function render() {
   renderScene();
   renderAway();
   renderExercise();
+  maybeHungerNotice(s);
 }
 
 function renderScene() {
@@ -502,7 +519,7 @@ function setConnected(online) {
   if (els.statusDot) els.statusDot.classList.toggle("offline", !online);
   if (els.statusText) {
     els.statusText.textContent = online
-      ? "和电脑同步中 · 长按打开手账"
+      ? "云端同步中 · 长按打开手账"
       : "离线 · 正在重连";
   }
 }
