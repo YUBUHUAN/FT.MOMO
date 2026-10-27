@@ -54,9 +54,9 @@
               <Border Height="3" Background="#B3FFFDF9" VerticalAlignment="Center" />
             </Grid>
           </Border>
-          <Border x:Name="LampButton" Background="Transparent" HorizontalAlignment="Left" VerticalAlignment="Top"
+          <Border x:Name="LampButton" Panel.ZIndex="50" Background="Transparent" HorizontalAlignment="Left" VerticalAlignment="Top"
                   Margin="22,24,0,0" Width="52" Height="52" Cursor="Hand"
-                  ToolTip="关灯睡觉 / 叫醒她" MouseLeftButtonUp="SceneLamp_MouseLeftButtonUp">
+                  ToolTip="关灯睡觉 / 叫醒她" PreviewMouseLeftButtonDown="LampButton_PreviewMouseLeftButtonDown">
             <Image x:Name="SceneLampImage" Source="Assets/lamp-on.png" Stretch="Uniform" />
           </Border>
           <TextBlock x:Name="ScenePlant" Text="🪴" FontFamily="{StaticResource EmojiFont}" FontSize="36"

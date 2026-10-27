@@ -1369,8 +1369,10 @@ public partial class MainWindow : Window
         OpenSheet("投喂", "先看看她想吃什么", body, _feedFoot);
     }
 
-    private void SceneLamp_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    private void LampButton_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        // The lamp sits inside the draggable scene. Intercept the press before
+        // the parent starts dragging the window, otherwise the click is lost.
         e.Handled = true;
         OpenSleepConfirm();
     }
@@ -1901,7 +1903,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.4.2.1.1 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.4.2.1.2 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }
