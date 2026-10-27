@@ -194,6 +194,25 @@ Android 端是**独立的云 App**：安装后直接注册/登录，不再需要
 
 ---
 
+## 云端数据在哪看
+
+Supabase 项目：`cflewtmxgekfpusicnfx`
+
+- 打开 Table Editor：https://supabase.com/dashboard/project/cflewtmxgekfpusicnfx/editor
+- 打开 SQL Editor：https://supabase.com/dashboard/project/cflewtmxgekfpusicnfx/sql/new
+
+三张表：
+
+- `momo_accounts`：账号 ID、用户名、bcrypt 密码哈希、创建时间（没有明文密码）
+- `momo_states`：每个账号的宠物状态 JSON、版本号 `rev`、更新时间
+- `momo_sessions`：登录 token 的 SHA-256 哈希和过期时间
+
+在 Table Editor 里可以直接查看行；在 SQL Editor 里可以运行 `cloud/inspect.sql` 的查询，看账号和宠物状态概览。不要手动修改 `password_hash`、`token_hash` 或 `state`，否则可能损坏账号或宠物数据。删除账号可以用 `cloud/inspect.sql` 最后那条注释掉的 SQL（会级联删除状态和会话）。
+
+发布用的 publishable key 只能调用 RPC，不能直接读表；表已开启 RLS，直接访问会被拒绝。数据库密码和 `service_role` 密钥不要发给别人。
+
+---
+
 ## 目录结构
 
 ```
