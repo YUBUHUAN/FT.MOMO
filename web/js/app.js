@@ -1011,7 +1011,18 @@ function openFeed() {
   const footBtn = el("button", "btn primary", "选一样吃的吧");
   footBtn.disabled = true;
 
-  C.FEED.forEach((item) => {
+  const foodGroups = (C.FEED_CATEGORIES || [{ id: "", title: "食物", note: "" }]).map((cat) => ({
+    ...cat,
+    items: C.FEED.filter((item) => (item.category || "") === cat.id)
+      .sort((a, b) => (a.order == null ? 999 : a.order) - (b.order == null ? 999 : b.order))
+  }));
+  foodGroups.forEach((group) => {
+    if (!group.items.length) return;
+    const head = el("div", "food-section-head");
+    head.dataset.kind = group.id;
+    head.innerHTML = `<span>${escapeHtml(group.title)}</span>${group.note ? `<em>${escapeHtml(group.note)}</em>` : ""}`;
+    body.appendChild(head);
+    group.items.forEach((item) => {
     const row = el("button", "food-row");
     row.type = "button";
     row.innerHTML = `
@@ -1050,6 +1061,7 @@ function openFeed() {
       footBtn.disabled = true;
       footBtn.textContent = `选一个${item.hint.replace("要", "")}`;
     });
+    });
   });
 
   const hint = el(
@@ -1083,7 +1095,9 @@ function openFeed() {
         S.bubble.show(r.line, { duration: 6200 });
         const delta = Number(r.moodDelta) || 0;
         const health = Number(r.healthDelta) || 0;
-        moodToast(`心情 ${delta >= 0 ? "+" : ""}${delta} · 饱食 +${Number(r.fullnessDelta) || 0} · 健康 +${health}`);
+        const full = Number(r.fullnessDelta) || 0;
+        const sign = (n) => `${n > 0 ? "+" : ""}${Math.round(n * 10) / 10}`;
+        moodToast(`心情 ${sign(delta)} · 饱食 ${sign(full)} · 健康 ${sign(health)}`, health < 0 ? "bad" : undefined);
       }
     } catch (err) {
       footBtn.disabled = false;

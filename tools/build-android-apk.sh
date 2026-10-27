@@ -9,7 +9,7 @@ if command -v cygpath >/dev/null 2>&1; then
 fi
 SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
 JAVA="${JAVA_HOME:-}"
-VERSION="1.4.0"
+VERSION="1.4.1"
 APK="$ROOT/dist/MomoPet-Android-$VERSION.apk"
 
 if [ -z "$SDK" ] || [ ! -d "$SDK" ]; then

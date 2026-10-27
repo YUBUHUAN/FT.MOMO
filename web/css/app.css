@@ -958,6 +958,41 @@ body.is-away .pet-zone {
 }
 
 /* food list */
+.food-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 2px 5px;
+  margin-top: 4px;
+  border-top: 1px dashed rgba(122, 111, 101, 0.22);
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink2);
+}
+
+.food-section-head:first-of-type {
+  border-top: none;
+}
+
+.food-section-head em {
+  font-family: var(--hand);
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
+.food-section-head[data-kind="dark"] {
+  color: var(--danger);
+}
+
+.food-section-head[data-kind="dark"] em {
+  color: var(--danger);
+  opacity: 0.8;
+}
+
 .food-row {
   display: flex;
   align-items: center;

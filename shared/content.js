@@ -6,7 +6,7 @@
   if (typeof module === "object" && module.exports) module.exports = factory();
   else root.MomoContent = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  const VERSION = "1.4.0";
+  const VERSION = "1.4.1";
   const DEFAULT_NAME = "墨墨";
 
   const MOOD_LABELS = [
@@ -94,12 +94,93 @@
 
   const SPAM_MARKS = ["（晕）", "（有点晕）", "（晕乎乎）", "（戳扁了）", "（躲）", "（放弃抵抗）"];
 
+  const FEED_CATEGORIES = [
+    { id: "staple", title: "主食", note: "" },
+    { id: "other", title: "其他食物", note: "按名称首字母排序" },
+    { id: "dark", title: "黑暗料理", note: "会扣健康，谨慎尝试" }
+  ];
+
   const FEED = [
+    {
+      id: "rice",
+      name: "白米饭",
+      emoji: "🍚",
+      hint: "要多少？",
+      category: "staple",
+      order: 0,
+      options: [
+        { id: "small", label: "小半碗", mood: 1, fullness: 10, health: 1, lines: ["白米饭香香的。小半碗就够啦。", "热乎乎的一口，胃里安静下来。"] },
+        { id: "bowl", label: "一碗", mood: 1, fullness: 18, health: 1, lines: ["一碗白米饭，配一点咸菜就很好。", "我吃得很慢，但会认真吃完。"] },
+        { id: "large", label: "加量", mood: 1, fullness: 26, health: 1, lines: ["今天胃口不错。……你不要笑我。", "加量也没关系，我会慢慢吃。"] }
+      ]
+    },
+    {
+      id: "mixed_rice",
+      name: "杂粮米",
+      emoji: "🍙",
+      hint: "要多少？",
+      category: "staple",
+      order: 1,
+      options: [
+        { id: "small", label: "一小碗", mood: 1, fullness: 12, health: 3, lines: ["杂粮米有嚼劲，越嚼越香。", "粗粮也很好吃，身体会喜欢。"] },
+        { id: "bowl", label: "一碗", mood: 1, fullness: 20, health: 3, lines: ["今天也认真吃饭了。", "有点粗糙，但很踏实。"] }
+      ]
+    },
+    {
+      id: "porridge",
+      name: "白粥",
+      emoji: "🥣",
+      hint: "要多少？",
+      category: "staple",
+      order: 2,
+      options: [
+        { id: "small", label: "小碗", mood: 2, fullness: 8, health: 1, lines: ["白粥暖暖的，像被轻轻拍了一下背。", "没什么味道，但很安心。"] },
+        { id: "bowl", label: "一碗", mood: 2, fullness: 15, health: 1, lines: ["慢慢喝，不烫。……你也来一口吗？", "粥面上有一点米油，很香。"] }
+      ]
+    },
+    {
+      id: "fried_rice",
+      name: "蛋炒饭",
+      emoji: "🍳",
+      hint: "要多少？",
+      category: "staple",
+      order: 3,
+      options: [
+        { id: "small", label: "小份", mood: 2, fullness: 18, health: 1, lines: ["蛋炒饭！锅气很足。", "米饭粒粒分开，是好吃的炒饭。"] },
+        { id: "large", label: "一份", mood: 3, fullness: 26, health: 1, lines: ["这一份有点多……但我可以努力。", "炒饭里有一点点焦香，很好。"] }
+      ]
+    },
+    {
+      id: "steamed_bun",
+      name: "馒头",
+      emoji: "🥟",
+      hint: "要几个？",
+      category: "staple",
+      order: 4,
+      options: [
+        { id: "one", label: "一个", mood: 1, fullness: 16, health: 1, lines: ["馒头软软的，掰开还冒热气。", "一点点甜，是粮食自己的甜。"] },
+        { id: "two", label: "两个", mood: 1, fullness: 28, health: 1, lines: ["两个……我慢慢吃。", "吃不完的话，可以留一个当明天早餐。"] }
+      ]
+    },
+    {
+      id: "tomato_noodle",
+      name: "番茄鸡蛋面",
+      emoji: "🍜",
+      hint: "要多少？",
+      category: "staple",
+      order: 5,
+      options: [
+        { id: "small", label: "小碗", mood: 3, fullness: 18, health: 2, lines: ["番茄酸酸的，汤很好喝。", "热汤面，呼——舒服。"] },
+        { id: "large", label: "大碗", mood: 3, fullness: 28, health: 2, lines: ["一大碗面，我能吃完。大概。", "汤也要喝完吗？……那我喝。"] }
+      ]
+    },
     {
       id: "milk_tea",
       name: "奶茶",
       emoji: "🧋",
       hint: "要几分糖？",
+      category: "other",
+      order: 40,
       options: [
         {
           id: "sugar_0",
@@ -168,6 +249,8 @@
       name: "炸串",
       emoji: "🍢",
       hint: "要什么调味？",
+      category: "other",
+      order: 70,
       options: [
         {
           id: "plain",
@@ -248,6 +331,8 @@
       name: "可乐",
       emoji: "🥤",
       hint: "要哪一种？",
+      category: "other",
+      order: 20,
       options: [
         {
           id: "classic",
@@ -304,6 +389,8 @@
       name: "小蛋糕",
       emoji: "🍰",
       hint: "挑个口味？",
+      category: "other",
+      order: 60,
       options: [
         {
           id: "strawberry",
@@ -348,6 +435,8 @@
       name: "麻辣烫",
       emoji: "🍲",
       hint: "要什么汤底？",
+      category: "other",
+      order: 30,
       options: [
         {
           id: "mild",
@@ -421,6 +510,8 @@
       name: "巧克力",
       emoji: "🍫",
       hint: "要哪一种？",
+      category: "other",
+      order: 50,
       options: [
         {
           id: "dark",
@@ -481,6 +572,8 @@
       name: "冰淇淋",
       emoji: "🍦",
       hint: "要什么口味？",
+      category: "other",
+      order: 10,
       options: [
         {
           id: "vanilla",
@@ -522,7 +615,59 @@
           ]
         }
       ]
-    }
+    },
+    {
+      id: "latiao",
+      name: "辣条",
+      emoji: "🌶️",
+      hint: "要哪种辣度？",
+      category: "other",
+      order: 25,
+      options: [
+        { id: "sweet_sour", label: "酸甜", mood: 3, fullness: 8, health: 1, lines: ["酸甜味的辣条……有点像小时候的小卖部。", "甜和辣混在一起，奇怪地上头。"] },
+        { id: "mala", label: "麻辣", mood: 3, fullness: 8, health: 1, lines: ["麻辣！舌头有点跳舞。", "好吃，但我要慢慢来。"] },
+        { id: "mild", label: "微辣", mood: 2, fullness: 8, health: 1, lines: ["微辣刚好，我可以接受。", "有一点点辣，但很香。"] },
+        { id: "tiny", label: "微微辣", mood: 2, fullness: 8, health: 1, lines: ["微微辣，几乎不辣。", "主要是咸香，我可以再吃一根。"] },
+        { id: "hot", label: "爆辣", mood: 4, fullness: 8, health: 0, lines: ["爆辣——！水，水在哪里。", "我后悔了。但好像又有点想吃第二根。"] },
+        { id: "bitter", label: "苦瓜味", mood: -1, fullness: 7, health: 0, lines: ["苦瓜味的辣条……是谁想出来的。", "又苦又辣，我表情应该很精彩。"] }
+      ]
+    },
+    {
+      id: "starry_pie",
+      name: "仰望星空派",
+      emoji: "🐟",
+      hint: "要吃多少？",
+      category: "dark",
+      order: 90,
+      options: [
+        { id: "piece", label: "一块", mood: -2, fullness: 5, health: -8, lines: ["鱼头在看着我……我有点不敢下口。", "味道很复杂。主要是海的味道和后悔。"] },
+        { id: "whole", label: "一整份", mood: -3, fullness: 8, health: -14, lines: ["一整份。……我为什么要答应。", "吃完之后，我想安静地躺一会儿。"] }
+      ]
+    },
+    {
+      id: "banlangen_noodle",
+      name: "板蓝根泡面",
+      emoji: "🍜",
+      hint: "要吃多少？",
+      category: "dark",
+      order: 91,
+      options: [
+        { id: "small", label: "小碗", mood: -1, fullness: 6, health: -6, lines: ["板蓝根泡面……闻起来就很养生。", "味道像感冒和夜宵的混合体。"] },
+        { id: "large", label: "大碗", mood: -2, fullness: 10, health: -10, lines: ["大碗。我可能是真的饿了。", "吃完这碗，我应该会好起来……吧？"] }
+      ]
+    },
+    {
+      id: "cilantro_icecream",
+      name: "香菜冰淇淋",
+      emoji: "🍦",
+      hint: "要几个球？",
+      category: "dark",
+      order: 92,
+      options: [
+        { id: "one", label: "一球", mood: 0, fullness: 4, health: -5, lines: ["香菜冰淇淋。……它居然是绿色的。", "第一口是甜的，第二口是香菜。"] },
+        { id: "two", label: "双球", mood: -1, fullness: 7, health: -9, lines: ["双球。我对自己太有信心了。", "我现在满嘴都是香菜。再见。"] }
+      ]
+    },
   ];
 
   const OUTINGS = [
@@ -958,6 +1103,7 @@
     HUNGER_LINES,
     SPAM_MARKS,
     FEED,
+    FEED_CATEGORIES,
     OUTINGS,
     OUTING_DURATIONS,
     EXERCISES,

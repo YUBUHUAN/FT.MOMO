@@ -1219,8 +1219,37 @@ public partial class MainWindow : Window
 
         if (ContentData?["FEED"] is JsonArray items)
         {
-            foreach (JsonNode? itemNode in items)
+            var feedRows = new List<(string? Header, string? Note, JsonNode? Item)>();
+            foreach (var (category, title, note) in new[]
             {
+                ("staple", "主食", ""),
+                ("other", "其他食物", "按名称首字母排序"),
+                ("dark", "黑暗料理", "会扣健康，谨慎尝试")
+            })
+            {
+                var groupItems = new List<JsonNode>();
+                foreach (JsonNode? candidate in items)
+                {
+                    if (candidate != null && Str(candidate, "category") == category) groupItems.Add(candidate);
+                }
+                if (groupItems.Count == 0) continue;
+                groupItems.Sort((a, b) => Num(a, "order", 999).CompareTo(Num(b, "order", 999)));
+                feedRows.Add((title, note, null));
+                foreach (var groupItem in groupItems) feedRows.Add((null, null, groupItem));
+            }
+
+            foreach (var entry in feedRows)
+            {
+                if (entry.Header != null)
+                {
+                    var head = new StackPanel { Margin = new Thickness(0, 10, 0, 5) };
+                    head.Children.Add(Txt(entry.Header, 10.5, entry.Header == "黑暗料理" ? "Danger" : "Ink2", new FontFamily("Georgia")));
+                    if (!string.IsNullOrEmpty(entry.Note))
+                        head.Children.Add(Txt(entry.Note, 9, "Muted", null, null, 0, 0, true));
+                    body.Children.Add(head);
+                    continue;
+                }
+                JsonNode? itemNode = entry.Item;
                 if (itemNode == null) continue;
                 string itemId = Str(itemNode, "id");
                 string itemName = Str(itemNode, "name");
@@ -1346,7 +1375,7 @@ public partial class MainWindow : Window
                     SpawnFood(_feedEmoji);
                     Chew();
                     TonePlayer.Feed();
-                    MoodToast($"心情 +{Num(result, "moodDelta"):0.#} · 饱食 +{Num(result, "fullnessDelta"):0.#} · 健康 +{Num(result, "healthDelta"):0.#}");
+                    MoodToast($"心情 {Signed(Num(result, "moodDelta"))} · 饱食 {Signed(Num(result, "fullnessDelta"))} · 健康 {Signed(Num(result, "healthDelta"))}");
                 }
             }
         }
@@ -1807,7 +1836,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.4 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.4.1 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }
@@ -3034,6 +3063,8 @@ public partial class MainWindow : Window
         : v >= 25 ? "肚子空空的，正好可以吃点东西。"
         : v >= 10 ? "她已经饿了，喂点东西吧。"
         : "真的很饿了，再拖下去健康会变差。";
+
+    private static string Signed(double value) => value > 0 ? "+" + value.ToString("0.#") : value.ToString("0.#");
 
     private static string HungerLine(string level) => level == "starving"
         ? "好饿……真的，肚子已经在抗议了。你先喂我一口好不好？"
