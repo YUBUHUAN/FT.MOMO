@@ -55,7 +55,8 @@
             </Grid>
           </Border>
           <TextBlock x:Name="SceneLamp" Text="💡" FontFamily="{StaticResource EmojiFont}" FontSize="27"
-                     HorizontalAlignment="Left" VerticalAlignment="Top" Margin="30,32,0,0" Opacity="0.78" />
+                     HorizontalAlignment="Left" VerticalAlignment="Top" Margin="30,32,0,0" Opacity="0.78"
+                     Cursor="Hand" ToolTip="关灯睡觉 / 叫醒她" MouseLeftButtonUp="SceneLamp_MouseLeftButtonUp" />
           <TextBlock x:Name="ScenePlant" Text="🪴" FontFamily="{StaticResource EmojiFont}" FontSize="36"
                      HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="26,0,0,34" Opacity="0.72" />
           <Ellipse x:Name="SceneRug" Width="230" Height="52" HorizontalAlignment="Center" VerticalAlignment="Bottom"
@@ -110,13 +111,6 @@
                    Foreground="#FFF6D9" HorizontalAlignment="Right" Margin="0,4,0,0" />
       </StackPanel>
     </Border>
-
-    <Canvas x:Name="SleepEyes" Panel.ZIndex="7" IsHitTestVisible="False" Visibility="Collapsed">
-      <Border Canvas.Left="150" Canvas.Top="419" Width="22" Height="33"
-              Background="#FFF0EB" BorderBrush="#211E26" BorderThickness="1.3" CornerRadius="12" />
-      <Border Canvas.Left="207" Canvas.Top="419" Width="22" Height="33"
-              Background="#FFF0EB" BorderBrush="#211E26" BorderThickness="1.3" CornerRadius="12" />
-    </Canvas>
 
     <Border x:Name="AwayCard" MouseLeftButtonDown="SheetHeader_MouseLeftButtonDown" Width="320" Background="{StaticResource Paper}" BorderBrush="{StaticResource Ink}"
             BorderThickness="1.5" CornerRadius="20" Padding="16" HorizontalAlignment="Center"

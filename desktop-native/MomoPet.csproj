@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <Content Include="Assets\pet.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\pet-sleep.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\avatar-round.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\app.ico" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\tray.png" CopyToOutputDirectory="PreserveNewest" />

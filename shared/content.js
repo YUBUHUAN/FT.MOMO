@@ -6,7 +6,7 @@
   if (typeof module === "object" && module.exports) module.exports = factory();
   else root.MomoContent = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  const VERSION = "1.4.2";
+  const VERSION = "1.4.2.1";
   const DEFAULT_NAME = "墨墨";
 
   const MOOD_LABELS = [
@@ -74,6 +74,16 @@
       "我知道你在逗我。我假装不知道。"
     ]
   };
+
+  const SLEEP_MURMURS = [
+    "……嗯……再五分钟……就五分钟……",
+    "我没有……没有偷吃布丁……",
+    "……猫……别踩我的头发……",
+    "唔……灯……有点亮……",
+    "……今天也……谢谢你……",
+    "……不要走……再坐一会儿……",
+    "……我不是……故意睡着的……"
+  ];
 
   const HUNGER_LINES = {
     hungry: [
@@ -1113,6 +1123,7 @@
     DEFAULT_NAME,
     MOOD_LABELS,
     TAP_LINES,
+    SLEEP_MURMURS,
     HUNGER_LINES,
     SPAM_MARKS,
     FEED,

@@ -382,10 +382,6 @@ body.is-away .pet-zone {
 body.is-sleeping .sleep-veil { opacity: 1; }
 body.is-sleeping .stage { filter: brightness(0.62) saturate(0.7); transition: filter 700ms ease; }
 body.is-sleeping .pet-body { animation-duration: 8.5s; }
-body.is-sleeping .pet-body .eyelid {
-  opacity: 1;
-  transform: scaleY(1);
-}
 body.is-sleeping .bubble {
   background: rgba(255, 250, 238, 0.94);
   box-shadow: 3px 5px 0 rgba(0, 0, 0, 0.18);
@@ -1831,6 +1827,9 @@ body[data-scene="garden"] {
 }
 
 .scene-decor .scene-lamp {
+  cursor: pointer;
+  pointer-events: auto;
+
   position: absolute;
   left: 8%;
   top: 13%;

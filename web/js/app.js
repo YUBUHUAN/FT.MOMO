@@ -74,6 +74,7 @@ const els = {
   petImg: $("#petImg"),
   fxLayer: $("#fxLayer"),
   bubble: $("#bubble"),
+  sceneLamp: $("#sceneLamp"),
   bubbleText: $("#bubbleText"),
   bubbleMark: $("#bubbleMark"),
   moodToast: $("#moodToast"),
@@ -283,6 +284,15 @@ function bindEvents() {
     (b) => b && b.addEventListener("click", () => Shell.openProfile())
   );
 
+  if (els.sceneLamp) {
+    els.sceneLamp.addEventListener("click", openSleepConfirm);
+    els.sceneLamp.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openSleepConfirm();
+      }
+    });
+  }
   els.awayEarly.addEventListener("click", askEarlyBack);
   els.awayPeek.addEventListener("click", peekAway);
   els.exerciseEarly.addEventListener("click", stopExerciseNow);
@@ -489,6 +499,7 @@ function render() {
   if (els.topMood) els.topMood.title = `${mood.label} · ${mood.note}`;
   document.title = `${s.name || C.DEFAULT_NAME} · 桌宠`;
   document.body.classList.toggle("is-sleeping", !!s.sleeping);
+  if (els.petImg) els.petImg.src = s.sleeping ? "/assets/pet-sleep.png" : "/assets/pet.png";
   if (els.statusText && S.connected) {
     els.statusText.textContent = s.sleeping ? "她睡着了 · 云端同步中" : "云端同步中 · 长按打开手账";
   }
@@ -511,7 +522,7 @@ function renderScene() {
   document.body.dataset.scene = scene.id;
   const lamp = document.querySelector(".scene-lamp");
   const plant = document.querySelector(".scene-plant");
-  if (lamp) lamp.textContent = scene.id === "rain" ? "🕯" : "💡";
+  if (lamp) lamp.textContent = s && s.sleeping ? "🌙" : scene.id === "rain" ? "🕯" : "💡";
   if (plant) plant.textContent = scene.id === "garden" ? "🌷" : "🪴";
 }
 
@@ -1005,8 +1016,53 @@ function closeSheet() {
   if (isElectron) setTimeout(() => hitTestNow(), 340);
 }
 
+function openSleepConfirm() {
+  if (!S.state) return;
+  const sleeping = !!S.state.sleeping;
+  const body = el("div");
+  const p = el("p", "hint-line");
+  p.textContent = sleeping
+    ? "灯还暗着。她睡得很轻，要现在叫醒她吗？"
+    : "灯要关掉了。她大概会揉揉眼睛，然后慢慢睡着。";
+  body.appendChild(p);
+  const foot = el("div");
+  foot.style.display = "flex";
+  foot.style.gap = "10px";
+  const cancel = el("button", "btn small ghost", sleeping ? "再睡会儿" : "再玩会儿");
+  const ok = el("button", "btn small primary", sleeping ? "叫醒" : "睡吧");
+  cancel.type = "button";
+  ok.type = "button";
+  foot.appendChild(cancel);
+  foot.appendChild(ok);
+  openSheet({
+    title: sleeping ? "要叫醒她吗？" : "嗯？要睡了吗",
+    subtitle: sleeping ? "她还在梦里" : "灯一关，她就知道该休息了",
+    body,
+    foot
+  });
+  cancel.addEventListener("click", closeSheet);
+  ok.addEventListener("click", async () => {
+    ok.disabled = true;
+    ok.textContent = "……";
+    try {
+      const res = await S.api.action("set_sleeping", { sleeping: !sleeping });
+      applyState(res.state);
+      closeSheet();
+      toast(sleeping ? "叫醒她了，早呀。" : "灯关了，晚安。", 2200);
+    } catch (err) {
+      ok.disabled = false;
+      ok.textContent = sleeping ? "叫醒" : "睡吧";
+      toast(err && err.message === "busy" ? "她还在外面或运动中，等会儿再睡吧" : "现在睡不着，等会儿再试", 2400);
+    }
+  });
+}
+
 function openFeed() {
   if (!S.state) return;
+  if (S.state.sleeping) {
+    toast("她睡着了，先点台灯叫醒她吧", 2200);
+    return;
+  }
   if (S.state.outing) {
     toast("她还在外面，回来再喂吧", 2200);
     return;
@@ -1137,6 +1193,10 @@ function openFeed() {
 
 function openOuting() {
   if (!S.state) return;
+  if (S.state.sleeping) {
+    toast("她睡着了，先点台灯叫醒她吧", 2200);
+    return;
+  }
   if (S.state.outing) {
     renderAway();
     toast("她已经出门啦", 2000);
@@ -1273,6 +1333,10 @@ function openBackground() {
 
 function openExercise() {
   if (!S.state) return;
+  if (S.state.sleeping) {
+    toast("她睡着了，先点台灯叫醒她吧", 2200);
+    return;
+  }
   if (S.state.outing) {
     toast("她还在外面，回来再运动吧", 2200);
     return;

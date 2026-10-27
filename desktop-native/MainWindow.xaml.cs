@@ -71,6 +71,9 @@ public partial class MainWindow : Window
     private bool _firstTipShown;
     private string _lastHungerLevel = "";
     private bool _lastSleeping;
+    private bool _showingSleepImage;
+    private static readonly BitmapImage SleepImage = new(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "pet-sleep.png"), UriKind.Absolute));
+    private static readonly BitmapImage AwakeImage = new(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "pet.png"), UriKind.Absolute));
     private bool _bubbleShowing;
     private bool _closing;
 
@@ -315,7 +318,11 @@ public partial class MainWindow : Window
         MoodPill.ToolTip = $"{Str(label, "label")} · {Str(label, "note")}";
         bool sleeping = Bool(s, "sleeping");
         SleepVeil.Visibility = sleeping ? Visibility.Visible : Visibility.Collapsed;
-        SleepEyes.Visibility = sleeping ? Visibility.Visible : Visibility.Collapsed;
+        if (_showingSleepImage != sleeping)
+        {
+            _showingSleepImage = sleeping;
+            Pet.Source = sleeping ? SleepImage : AwakeImage;
+        }
         if (sleeping != _lastSleeping)
         {
             _lastSleeping = sleeping;
@@ -399,7 +406,7 @@ public partial class MainWindow : Window
         SceneWindow.Background = id == "rain"
             ? new SolidColorBrush(Color.FromArgb(255, 176, 185, 202))
             : new SolidColorBrush(Color.FromArgb(255, 220, 235, 236));
-        SceneLamp.Text = id == "rain" ? "🕯" : "💡";
+        SceneLamp.Text = Bool(s, "sleeping") ? "🌙" : id == "rain" ? "🕯" : "💡";
         ScenePlant.Text = id == "garden" ? "🌷" : "🪴";
         SceneHint.Text = $"{Str(scene, "emoji", "🏠")} {Str(scene, "name", "家")}";
         ScenePanel.Visibility = _isAway ? Visibility.Collapsed : Visibility.Visible;
@@ -1360,17 +1367,33 @@ public partial class MainWindow : Window
         OpenSheet("投喂", "先看看她想吃什么", body, _feedFoot);
     }
 
-    private async Task ToggleSleepAsync()
+    private void SceneLamp_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        OpenSleepConfirm();
+    }
+
+    private void OpenSleepConfirm()
+    {
+        if (State == null) return;
+        bool sleeping = Bool(State, "sleeping");
+        ShowConfirm(
+            sleeping ? "要叫醒她吗？" : "嗯？要睡了吗",
+            sleeping ? "灯还暗着。她睡得很轻，要现在叫醒她吗？" : "灯要关掉了。她大概会揉揉眼睛，然后慢慢睡着。",
+            sleeping ? "叫醒" : "睡吧",
+            async () => await SetSleepingAsync(!sleeping));
+    }
+
+    private async Task SetSleepingAsync(bool next)
     {
         if (_busy || State == null) return;
-        bool next = !Bool(State, "sleeping");
         _busy = true;
         try
         {
             JsonNode res = await _api.ActionAsync("set_sleeping", new() { ["sleeping"] = next });
             _api.State = res["state"];
             RenderState();
-            ShowToast(next ? "熄灯了，晚安。" : "叫醒她了，早呀。");
+            ShowToast(next ? "灯关了，晚安。" : "叫醒她了，早呀。");
         }
         catch (ApiException ex)
         {
@@ -1876,7 +1899,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.4.2 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.4.2.1 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }
@@ -2427,16 +2450,6 @@ public partial class MainWindow : Window
             SettingsStore.ApplyStartup(v);
             SaveSettings();
         }));
-        bool sleeping = State != null && Bool(State, "sleeping");
-        var sleep = new Button
-        {
-            Content = sleeping ? "叫醒她" : "哄她睡觉",
-            Style = (Style)FindResource("GhostButton"),
-            HorizontalAlignment = System.Windows.HorizontalAlignment.Left,
-            Margin = new Thickness(0, 6, 0, 4)
-        };
-        sleep.Click += async (_, _) => await ToggleSleepAsync();
-        stack.Children.Add(sleep);
         var resetPos = new Button { Content = "回到右下角", Style = (Style)FindResource("GhostButton"), HorizontalAlignment = System.Windows.HorizontalAlignment.Left, Margin = new Thickness(0, 6, 0, 4) };
         resetPos.Click += (_, _) =>
         {
