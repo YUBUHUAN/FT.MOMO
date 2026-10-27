@@ -31,12 +31,12 @@
 打包好的程序在：
 
 ```
-dist/MomoPet-Setup-1.4.1.exe        ← 给别的电脑装，带卸载器
+dist/MomoPet-Setup-1.4.2.exe        ← 给别的电脑装，带卸载器
 dist/MomoPet-Windows-Portable/      ← 免安装便携版
-dist/MomoPet-Android-1.4.1.apk      ← 安卓安装包
+dist/MomoPet-Android-1.4.2.apk      ← 安卓安装包
 ```
 
-Windows 用户推荐直接运行 `MomoPet-Setup-1.4.1.exe`，会安装到 `%LOCALAPPDATA%\Programs\MomoPet` 并创建桌面/开始菜单快捷方式。便携版则解压后：
+Windows 用户推荐直接运行 `MomoPet-Setup-1.4.2.exe`，会安装到 `%LOCALAPPDATA%\Programs\MomoPet` 并创建桌面/开始菜单快捷方式。便携版则解压后：
 
 - **推荐**：双击 `启动墨墨.cmd`。它会带上随包的 .NET 运行时，不要求电脑预装 .NET。
 - `启动墨墨.vbs` 是无窗口版；部分电脑禁用了 Windows Script Host，双击 VBS 会没反应——这时用 `启动墨墨.cmd` 就好。
@@ -71,8 +71,8 @@ Windows 用户推荐直接运行 `MomoPet-Setup-1.4.1.exe`，会安装到 `%LOCA
 
 Android 端是**独立的云 App**：安装后直接注册/登录，不再需要填电脑 IP，也不需要电脑和手机在同一 Wi-Fi。
 
-- **APK**：`dist/MomoPet-Android-1.4.1.apk`
-- **Windows**：`dist/MomoPet-Setup-1.4.1.exe` 或便携版
+- **APK**：`dist/MomoPet-Android-1.4.2.apk`
+- **Windows**：`dist/MomoPet-Setup-1.4.2.exe` 或便携版
 
 ### 第一次使用
 

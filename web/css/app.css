@@ -343,6 +343,64 @@ body.is-away .pet-zone {
   72% { transform: translateY(-1.6%); }
 }
 
+/* --------------------------------------------------------------- sleep */
+.sleep-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 72% 18%, rgba(255, 241, 196, 0.18), transparent 24%),
+    linear-gradient(180deg, rgba(22, 24, 46, 0.6), rgba(20, 17, 30, 0.72));
+  transition: opacity 700ms ease;
+}
+
+.sleep-veil::before,
+.sleep-veil::after {
+  content: "✦";
+  position: absolute;
+  color: rgba(255, 246, 212, 0.7);
+  font-size: 12px;
+  animation: sleepTwinkle 4.5s ease-in-out infinite;
+}
+
+.sleep-veil::before { left: 18%; top: 20%; }
+.sleep-veil::after { right: 16%; top: 31%; animation-delay: 1.7s; font-size: 9px; }
+
+.sleep-veil span {
+  position: absolute;
+  right: 15%;
+  top: 45%;
+  font-family: var(--font-num);
+  font-size: 28px;
+  letter-spacing: 4px;
+  color: rgba(255, 246, 212, 0.82);
+  animation: sleepFloat 3.2s ease-in-out infinite;
+}
+
+body.is-sleeping .sleep-veil { opacity: 1; }
+body.is-sleeping .stage { filter: brightness(0.62) saturate(0.7); transition: filter 700ms ease; }
+body.is-sleeping .pet-body { animation-duration: 8.5s; }
+body.is-sleeping .pet-body .eyelid {
+  opacity: 1;
+  transform: scaleY(1);
+}
+body.is-sleeping .bubble {
+  background: rgba(255, 250, 238, 0.94);
+  box-shadow: 3px 5px 0 rgba(0, 0, 0, 0.18);
+}
+
+@keyframes sleepFloat {
+  0%, 100% { transform: translateY(0); opacity: 0.55; }
+  50% { transform: translateY(-8px); opacity: 0.95; }
+}
+
+@keyframes sleepTwinkle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.8; }
+}
+
 /* -------------------------------------------------------------- bubble */
 .bubble {
   position: absolute;
@@ -360,7 +418,7 @@ body.is-away .pet-zone {
   transform-origin: 50% 100%;
   transition: opacity 200ms, transform 260ms var(--ease-out);
   pointer-events: none;
-  z-index: 5;
+  z-index: 9;
   overflow: visible;
 }
 

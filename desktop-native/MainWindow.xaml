@@ -103,6 +103,21 @@
 
     <Canvas x:Name="FxLayer" IsHitTestVisible="False" />
 
+    <Border x:Name="SleepVeil" Panel.ZIndex="6" Background="#700B0D1A" IsHitTestVisible="False" Visibility="Collapsed">
+      <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,24,0">
+        <TextBlock Text="💤" FontFamily="{StaticResource EmojiFont}" FontSize="30" HorizontalAlignment="Right" />
+        <TextBlock Text="她睡着了" FontFamily="{StaticResource HandFont}" FontSize="13"
+                   Foreground="#FFF6D9" HorizontalAlignment="Right" Margin="0,4,0,0" />
+      </StackPanel>
+    </Border>
+
+    <Canvas x:Name="SleepEyes" Panel.ZIndex="7" IsHitTestVisible="False" Visibility="Collapsed">
+      <Border Canvas.Left="150" Canvas.Top="419" Width="22" Height="33"
+              Background="#FFF0EB" BorderBrush="#211E26" BorderThickness="1.3" CornerRadius="12" />
+      <Border Canvas.Left="207" Canvas.Top="419" Width="22" Height="33"
+              Background="#FFF0EB" BorderBrush="#211E26" BorderThickness="1.3" CornerRadius="12" />
+    </Canvas>
+
     <Border x:Name="AwayCard" MouseLeftButtonDown="SheetHeader_MouseLeftButtonDown" Width="320" Background="{StaticResource Paper}" BorderBrush="{StaticResource Ink}"
             BorderThickness="1.5" CornerRadius="20" Padding="16" HorizontalAlignment="Center"
             VerticalAlignment="Center" Visibility="Collapsed">

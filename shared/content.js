@@ -6,7 +6,7 @@
   if (typeof module === "object" && module.exports) module.exports = factory();
   else root.MomoContent = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  const VERSION = "1.4.1";
+  const VERSION = "1.4.2";
   const DEFAULT_NAME = "墨墨";
 
   const MOOD_LABELS = [
@@ -426,6 +426,19 @@
             "抹茶有一点点涩。我喜欢这种不讨好的味道。",
             "抹茶不甜，适合配一本读不完的书。",
             "嗯……是大人会喜欢的味道。我勉强算大人了。"
+          ]
+        },
+        {
+          id: "icecream",
+          label: "冰淇淋",
+          short: "冰淇淋",
+          mood: 4,
+          fullness: 20,
+          health: 1,
+          lines: [
+            "冰淇淋蛋糕？上面是凉凉的，下面是软软的，好神奇。",
+            "奶油和冰淇淋一起融化，像把夏天夹进了蛋糕里。",
+            "这一口有点贪心，但我今天想吃甜一点。"
           ]
         }
       ]

@@ -144,6 +144,7 @@ function bindStatic() {
     toast("她回到右下角了");
   });
   $("#setReset").addEventListener("click", openReset);
+  $("#setSleepBtn").addEventListener("click", toggleSleep);
   els.modal.addEventListener("click", (e) => {
     if (e.target === els.modal) closeModal();
   });
@@ -199,7 +200,7 @@ function render(state) {
   els.dialEmoji.textContent = mood.emoji;
   els.dialValue.textContent = Math.round(s.mood);
   els.pTag.textContent = `DAY ${String(days).padStart(2, "0")}`;
-  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.4.1"}`;
+  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.4.2"}`;
   if (els.pStorage) els.pStorage.textContent = "云端同步 · 数据保存在 Supabase";
 
   const fullness = Number(s.fullness) || 0;
@@ -240,6 +241,7 @@ function render(state) {
   els.feeds.textContent = s.totals.feeds || 0;
   els.outingCount.textContent = s.totals.outings || 0;
   els.exerciseCount.textContent = s.totals.exercises || 0;
+  renderSettings();
 
   renderChart(s);
   renderFeed(s);
@@ -504,6 +506,26 @@ function renderSettings() {
   set("setSound", S.settings.sound);
   set("setTop", S.settings.alwaysOnTop);
   set("setLaunch", S.settings.autoLaunch);
+
+  const sleeping = !!(S.state && S.state.sleeping);
+  const label = document.getElementById("setSleepLabel");
+  const hint = document.getElementById("setSleepHint");
+  const button = document.getElementById("setSleepBtn");
+  if (label) label.textContent = sleeping ? "她正在睡觉" : "哄她睡觉";
+  if (hint) hint.textContent = sleeping ? "嘘……让她再睡一会儿，或者叫醒她" : "熄灯，让她闭上眼睛休息一会儿";
+  if (button) button.textContent = sleeping ? "叫醒" : "睡觉";
+}
+
+async function toggleSleep() {
+  if (!S.api || !S.state) return;
+  const next = !S.state.sleeping;
+  try {
+    const body = await S.api.action("set_sleeping", { sleeping: next });
+    render(body.state);
+    toast(next ? "熄灯了，晚安。" : "叫醒她了，早呀。", 2000);
+  } catch (err) {
+    toast(err && err.message === "busy" ? "她还在外面或运动中，等会儿再睡吧" : "现在睡不着，等会儿再试", 2400);
+  }
 }
 
 async function toggleSetting(key) {

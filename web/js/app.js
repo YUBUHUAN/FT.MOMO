@@ -32,6 +32,7 @@ const S = {
   lastBurstAt: 0,
   lastBurstCount: 0,
   lastHungerLevel: "",
+  lastSleeping: false,
   press: null,
   dragging: false,
   ignore: false,
@@ -487,11 +488,20 @@ function render() {
   if (els.topMoodValue) els.topMoodValue.textContent = Math.round(s.mood);
   if (els.topMood) els.topMood.title = `${mood.label} · ${mood.note}`;
   document.title = `${s.name || C.DEFAULT_NAME} · 桌宠`;
+  if (els.statusText && S.connected) {
+    els.statusText.textContent = s.sleeping ? "她睡着了 · 云端同步中" : "云端同步中 · 长按打开手账";
+  }
 
   renderScene();
   renderAway();
   renderExercise();
   maybeHungerNotice(s);
+  if (!!s.sleeping !== S.lastSleeping) {
+    S.lastSleeping = !!s.sleeping;
+    if (S.bubble) {
+      S.bubble.show(s.sleeping ? "晚安。……灯我关掉了，你也早点休息。" : "唔……我醒啦。现在是什么时候？", { duration: 5200 });
+    }
+  }
 }
 
 function renderScene() {

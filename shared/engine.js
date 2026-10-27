@@ -73,6 +73,7 @@
       health: START_HEALTH,
       fatigue: START_FATIGUE,
       background: "home",
+      sleeping: false,
       createdAt: now.toISOString(),
       lastCareAt: now.toISOString(),
       lastVitalsAt: now.toISOString(),
@@ -134,10 +135,12 @@
     const hours = Math.max(0, elapsed / 3600000);
     const beforeFullness = Number(state.fullness) || 0;
     state.fullness = round1(clamp(beforeFullness - hours * FULLNESS_PER_HOUR, 0, 100));
-    state.fatigue = round1(clamp((Number(state.fatigue) || 0) - hours * FATIGUE_PER_HOUR, 0, 100));
+    const restful = state.sleeping === true;
+    state.fatigue = round1(clamp((Number(state.fatigue) || 0) - hours * (restful ? 2.0 : FATIGUE_PER_HOUR), 0, 100));
 
     // Health drops slowly all the time, faster when she is hungry or very tired.
-    let healthRate = HEALTH_PER_HOUR;
+    // A good sleep rests her body instead of draining it.
+    let healthRate = restful ? 0.12 : HEALTH_PER_HOUR;
     if (state.fullness <= HUNGRY_AT) healthRate += 0.25;
     if (state.fullness <= STARVING_AT) healthRate += 0.45;
     if (state.fatigue >= 82) healthRate += 0.2;
@@ -169,6 +172,7 @@
     if (typeof state.health !== "number" || !Number.isFinite(state.health)) state.health = START_HEALTH;
     if (typeof state.fatigue !== "number" || !Number.isFinite(state.fatigue)) state.fatigue = START_FATIGUE;
     if (!Array.isArray(state.exerciseHistory)) state.exerciseHistory = [];
+    if (typeof state.sleeping !== "boolean") state.sleeping = false;
     if (typeof state.background !== "string" || !content.SCENES.some((sc) => sc.id === state.background)) {
       state.background = "home";
     }

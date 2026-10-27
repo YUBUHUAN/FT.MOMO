@@ -50,6 +50,17 @@
       case "heartbeat":
         result = engine.heartbeat(state, content, !!a.visible, now);
         break;
+      case "set_sleeping": {
+        if (a.sleeping && (state.outing || state.exercise)) {
+          result = { ok: false, error: "busy" };
+          break;
+        }
+        state.sleeping = !!a.sleeping;
+        state.lastInteractionAt = new Date(now).toISOString();
+        state.rev = (state.rev || 0) + 1;
+        result = { ok: true, sleeping: state.sleeping };
+        break;
+      }
       case "rename": {
         const name = engine.validateName(a.name);
         if (!name) result = { ok: false, error: "bad_name" };

@@ -70,6 +70,7 @@ public partial class MainWindow : Window
     private bool _isAway;
     private bool _firstTipShown;
     private string _lastHungerLevel = "";
+    private bool _lastSleeping;
     private bool _bubbleShowing;
     private bool _closing;
 
@@ -312,6 +313,14 @@ public partial class MainWindow : Window
         MoodEmoji.Text = Str(label, "emoji", "🍃");
         MoodValue.Text = Math.Round(mood).ToString(CultureInfo.InvariantCulture);
         MoodPill.ToolTip = $"{Str(label, "label")} · {Str(label, "note")}";
+        bool sleeping = Bool(s, "sleeping");
+        SleepVeil.Visibility = sleeping ? Visibility.Visible : Visibility.Collapsed;
+        SleepEyes.Visibility = sleeping ? Visibility.Visible : Visibility.Collapsed;
+        if (sleeping != _lastSleeping)
+        {
+            _lastSleeping = sleeping;
+            if (!_bubbleShowing) ShowBubble(sleeping ? "晚安。……灯我关掉了，你也早点休息。" : "唔……我醒啦。现在是什么时候？", 4600);
+        }
         double fullness = Num(s, "fullness", 0);
         string hunger = fullness <= 10 ? "starving" : fullness <= 25 ? "hungry" : "ok";
         if (hunger != _lastHungerLevel)
@@ -699,6 +708,11 @@ public partial class MainWindow : Window
         if (State?["exercise"] != null)
         {
             PeekExercise();
+            return;
+        }
+        if (State != null && Bool(State, "sleeping"))
+        {
+            ShowBubble("嘘……她睡着了。让她再睡一会儿吧。", 3200);
             return;
         }
         DateTime now = DateTime.UtcNow;
@@ -1346,6 +1360,32 @@ public partial class MainWindow : Window
         OpenSheet("投喂", "先看看她想吃什么", body, _feedFoot);
     }
 
+    private async Task ToggleSleepAsync()
+    {
+        if (_busy || State == null) return;
+        bool next = !Bool(State, "sleeping");
+        _busy = true;
+        try
+        {
+            JsonNode res = await _api.ActionAsync("set_sleeping", new() { ["sleeping"] = next });
+            _api.State = res["state"];
+            RenderState();
+            ShowToast(next ? "熄灯了，晚安。" : "叫醒她了，早呀。");
+        }
+        catch (ApiException ex)
+        {
+            ShowToast(ex.Message == "busy" ? "她还在外面或运动中，等会儿再睡吧" : "现在睡不着，等会儿再试");
+        }
+        catch
+        {
+            SetOnline(false);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
     private async Task FeedAsync()
     {
         if (_busy || string.IsNullOrEmpty(_feedItemId) || string.IsNullOrEmpty(_feedOptionId)) return;
@@ -1836,7 +1876,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.4.1 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.4.2 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }
@@ -2387,6 +2427,16 @@ public partial class MainWindow : Window
             SettingsStore.ApplyStartup(v);
             SaveSettings();
         }));
+        bool sleeping = State != null && Bool(State, "sleeping");
+        var sleep = new Button
+        {
+            Content = sleeping ? "叫醒她" : "哄她睡觉",
+            Style = (Style)FindResource("GhostButton"),
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Left,
+            Margin = new Thickness(0, 6, 0, 4)
+        };
+        sleep.Click += async (_, _) => await ToggleSleepAsync();
+        stack.Children.Add(sleep);
         var resetPos = new Button { Content = "回到右下角", Style = (Style)FindResource("GhostButton"), HorizontalAlignment = System.Windows.HorizontalAlignment.Left, Margin = new Thickness(0, 6, 0, 4) };
         resetPos.Click += (_, _) =>
         {
