@@ -488,6 +488,7 @@ function render() {
   if (els.topMoodValue) els.topMoodValue.textContent = Math.round(s.mood);
   if (els.topMood) els.topMood.title = `${mood.label} · ${mood.note}`;
   document.title = `${s.name || C.DEFAULT_NAME} · 桌宠`;
+  document.body.classList.toggle("is-sleeping", !!s.sleeping);
   if (els.statusText && S.connected) {
     els.statusText.textContent = s.sleeping ? "她睡着了 · 云端同步中" : "云端同步中 · 长按打开手账";
   }

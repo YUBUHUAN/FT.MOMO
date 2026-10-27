@@ -35,3 +35,5 @@ test/*.txt
 .idea/
 Thumbs.db
 .DS_Store
+
+tmp/
