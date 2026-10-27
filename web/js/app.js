@@ -419,6 +419,10 @@ function onPointerCancel() {
 function onPetTap() {
   if (S.dragging) return;
   if (!S.state) return;
+  if (S.state.sleeping) {
+    S.bubble.show(pick(C.SLEEP_MURMURS), { duration: 3200 });
+    return;
+  }
   if (S.state.exercise) {
     peekExercise();
     return;
@@ -522,7 +526,7 @@ function renderScene() {
   document.body.dataset.scene = scene.id;
   const lamp = document.querySelector(".scene-lamp");
   const plant = document.querySelector(".scene-plant");
-  if (lamp) lamp.textContent = s && s.sleeping ? "🌙" : scene.id === "rain" ? "🕯" : "💡";
+  if (lamp) lamp.src = s && s.sleeping ? "/assets/lamp-off.png" : "/assets/lamp-on.png";
   if (plant) plant.textContent = scene.id === "garden" ? "🌷" : "🪴";
 }
 

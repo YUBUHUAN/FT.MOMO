@@ -1829,6 +1829,11 @@ body[data-scene="garden"] {
 .scene-decor .scene-lamp {
   cursor: pointer;
   pointer-events: auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: contain;
+  user-select: none;
 
   position: absolute;
   left: 8%;

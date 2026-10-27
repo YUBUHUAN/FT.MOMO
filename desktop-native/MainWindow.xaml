@@ -54,9 +54,11 @@
               <Border Height="3" Background="#B3FFFDF9" VerticalAlignment="Center" />
             </Grid>
           </Border>
-          <TextBlock x:Name="SceneLamp" Text="💡" FontFamily="{StaticResource EmojiFont}" FontSize="27"
-                     HorizontalAlignment="Left" VerticalAlignment="Top" Margin="30,32,0,0" Opacity="0.78"
-                     Cursor="Hand" ToolTip="关灯睡觉 / 叫醒她" MouseLeftButtonUp="SceneLamp_MouseLeftButtonUp" />
+          <Border x:Name="LampButton" Background="Transparent" HorizontalAlignment="Left" VerticalAlignment="Top"
+                  Margin="22,24,0,0" Width="52" Height="52" Cursor="Hand"
+                  ToolTip="关灯睡觉 / 叫醒她" MouseLeftButtonUp="SceneLamp_MouseLeftButtonUp">
+            <Image x:Name="SceneLampImage" Source="Assets/lamp-on.png" Stretch="Uniform" />
+          </Border>
           <TextBlock x:Name="ScenePlant" Text="🪴" FontFamily="{StaticResource EmojiFont}" FontSize="36"
                      HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="26,0,0,34" Opacity="0.72" />
           <Ellipse x:Name="SceneRug" Width="230" Height="52" HorizontalAlignment="Center" VerticalAlignment="Bottom"

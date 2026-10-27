@@ -74,6 +74,8 @@ public partial class MainWindow : Window
     private bool _showingSleepImage;
     private static readonly BitmapImage SleepImage = new(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "pet-sleep.png"), UriKind.Absolute));
     private static readonly BitmapImage AwakeImage = new(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "pet.png"), UriKind.Absolute));
+    private static readonly BitmapImage LampOnImage = new(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "lamp-on.png"), UriKind.Absolute));
+    private static readonly BitmapImage LampOffImage = new(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "lamp-off.png"), UriKind.Absolute));
     private bool _bubbleShowing;
     private bool _closing;
 
@@ -406,7 +408,7 @@ public partial class MainWindow : Window
         SceneWindow.Background = id == "rain"
             ? new SolidColorBrush(Color.FromArgb(255, 176, 185, 202))
             : new SolidColorBrush(Color.FromArgb(255, 220, 235, 236));
-        SceneLamp.Text = Bool(s, "sleeping") ? "🌙" : id == "rain" ? "🕯" : "💡";
+        SceneLampImage.Source = Bool(s, "sleeping") ? LampOffImage : LampOnImage;
         ScenePlant.Text = id == "garden" ? "🌷" : "🪴";
         SceneHint.Text = $"{Str(scene, "emoji", "🏠")} {Str(scene, "name", "家")}";
         ScenePanel.Visibility = _isAway ? Visibility.Collapsed : Visibility.Visible;
@@ -1899,7 +1901,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.4.2.1 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.4.2.1.1 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }
