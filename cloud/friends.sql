@@ -58,13 +58,13 @@ as $$
   select 'momo'::text, s.account_id, a.username, a.friend_code
   from public.momo_sessions s
   join public.momo_accounts a on a.id = s.account_id
-  where s.token_hash = encode(digest(coalesce(p_token, ''), 'sha256'), 'hex')
+  where s.token_hash = encode(extensions.digest(coalesce(p_token, ''), 'sha256'), 'hex')
     and s.expires_at > now()
   union all
   select 'wowo'::text, s.account_id, a.username, a.friend_code
   from public.wowo_sessions s
   join public.wowo_accounts a on a.id = s.account_id
-  where s.token_hash = encode(digest(coalesce(p_token, ''), 'sha256'), 'hex')
+  where s.token_hash = encode(extensions.digest(coalesce(p_token, ''), 'sha256'), 'hex')
     and s.expires_at > now()
   limit 1;
 $$;
