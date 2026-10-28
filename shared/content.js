@@ -6,7 +6,7 @@
   if (typeof module === "object" && module.exports) module.exports = factory();
   else root.MomoContent = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  const VERSION = "1.7.0.2";
+  const VERSION = "1.7.0.3";
   const DEFAULT_NAME = "墨墨";
 
   const MOOD_LABELS = [

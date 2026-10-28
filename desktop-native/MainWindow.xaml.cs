@@ -1992,13 +1992,20 @@ public partial class MainWindow : Window
             var accept = new Button { Content = "同意", Style = (Style)FindResource("PrimaryButton"), Margin = new Thickness(0, 0, 6, 0) };
             accept.Click += async (_, _) =>
             {
-                try { await _api.FriendActivityRespondAsync(Str(invite, "id"), true); ShowToast("好，一起出发。"); OpenFriend(); }
-                catch (ApiException ex) { ShowToast(ex.Message == "busy" ? "对方现在没空" : "接受失败"); }
+                try
+                {
+                    await _api.FriendActivityRespondAsync(Str(invite["payload"] as JsonObject, "id"), true);
+                    await _api.FriendEventAckAsync(Str(invite, "id"));
+                    ShowToast("好，一起出发。");
+                    await RefreshFriendStateAsync();
+                    OpenFriend();
+                }
+                catch (ApiException ex) { ShowToast(ex.Message == "busy" ? "现在没空：有一方正在忙" : "接受失败"); }
             };
             var decline = new Button { Content = "拒绝", Style = (Style)FindResource("SmallButton") };
             decline.Click += async (_, _) =>
             {
-                try { await _api.FriendActivityRespondAsync(Str(invite, "id"), false); await _api.FriendEventAckAsync(Str(invite, "id")); OpenFriend(); }
+                try { await _api.FriendActivityRespondAsync(Str(invite["payload"] as JsonObject, "id"), false); await _api.FriendEventAckAsync(Str(invite, "id")); OpenFriend(); }
                 catch { ShowToast("操作失败"); }
             };
             inviteRow.Children.Add(accept); inviteRow.Children.Add(decline);
@@ -2246,7 +2253,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.7.0.2 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.7.0.3 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }

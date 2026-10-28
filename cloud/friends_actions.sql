@@ -218,6 +218,9 @@ begin
   end if;
   if not p_accept then
     update public.friend_activities set status = 'declined', responded_at = now() where id = v_act.id;
+    update public.friend_events set read_at = now()
+      where link_id = v_link.link_id and target_app = v_link.me_app and target_account_id = v_link.me_id
+        and type = 'activity_invite' and payload->>'id' = v_act.id::text and read_at is null;
     insert into public.friend_events (link_id, target_app, target_account_id, type, payload)
     values (v_link.link_id, v_act.initiator_app, v_act.initiator_account_id, 'activity_declined',
       jsonb_build_object('kind', v_act.kind, 'from', v_link.me_name));
@@ -260,6 +263,9 @@ begin
     update public.momo_states set state = v_other_state, rev = rev + 1, updated_at = now() where account_id = v_link.other_id;
   end if;
   update public.friend_activities set status = 'active', responded_at = now(), ends_at = v_ends where id = v_act.id;
+  update public.friend_events set read_at = now()
+    where link_id = v_link.link_id and target_app = v_link.me_app and target_account_id = v_link.me_id
+      and type = 'activity_invite' and payload->>'id' = v_act.id::text and read_at is null;
   insert into public.friend_events (link_id, target_app, target_account_id, type, payload)
   values (v_link.link_id, v_link.other_app, v_link.other_id, 'activity_started',
     jsonb_build_object('kind', v_act.kind, 'option', v_act.option, 'from', v_link.me_name));

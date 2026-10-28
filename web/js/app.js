@@ -217,21 +217,28 @@ async function refreshFriendState() {
 
 async function acceptFriendInvite(id) {
   if (!S.api || !id) return;
+  const eventId = S.friendInvite && S.friendInvite.eventId;
   try {
     await S.api.friendActivityRespond(id, true);
+    if (eventId) await S.api.friendEventAck(eventId).catch(() => {});
+    const who = S.friendInvite && S.friendInvite.from ? S.friendInvite.from : "密友";
     S.friendInvite = null;
     hideFriendStrip();
-    toast("好，一起出发。");
+    S.bubble && S.bubble.show(`和【${who}】一起出发了。`, { duration: 4200 });
     await refreshFriendState();
   } catch (err) {
-    toast(err.message === "busy" ? "对方现在没空，或者你们正在忙别的。" : "接受失败，稍后再试");
+    toast(err.message === "busy" ? "现在没空：你们中有一方在睡觉/出游/运动中。"
+      : err.message === "expired" ? "邀请已经过期了。"
+      : "接受失败，稍后再试");
   }
 }
 
 async function declineFriendInvite(id) {
   if (!S.api || !id) return;
+  const eventId = S.friendInvite && S.friendInvite.eventId;
   try {
     await S.api.friendActivityRespond(id, false);
+    if (eventId) await S.api.friendEventAck(eventId).catch(() => {});
     S.friendInvite = null;
     hideFriendStrip();
     toast("已拒绝这次邀请。");
@@ -261,7 +268,7 @@ async function checkFriendEvents() {
         await S.api.friendEventAck(ev.id).catch(() => {});
         refreshFriendState();
       } else if (ev.type === "activity_invite") {
-        S.friendInvite = { id: p.id || (out.activity && out.activity.id), kind: p.kind, option: p.option, from: p.from };
+        S.friendInvite = { id: p.id || (out.activity && out.activity.id), eventId: ev.id, kind: p.kind, option: p.option, from: p.from };
         showFriendStrip(`【${p.from || "密友"}】想和你${friendKindLabel(p.kind)}（${p.option || ""}）。`, [
           { label: "同意", primary: true, onClick: () => acceptFriendInvite(S.friendInvite && S.friendInvite.id) },
           { label: "拒绝", onClick: () => declineFriendInvite(S.friendInvite && S.friendInvite.id) }
