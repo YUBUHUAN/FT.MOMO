@@ -248,6 +248,49 @@ class LocalApi {
     return body;
   }
 
+  async friendCode() {
+    const { res, body } = await fetchJson("/api/friend/code", { headers: authHeaders(this.token) });
+    if (!body) throw Object.assign(new Error("network"), { offline: true });
+    if (!res.ok || body.ok === false) throw Object.assign(new Error(body.error || "friend_failed"), { status: res.status, body });
+    return body;
+  }
+
+  async friendPending() {
+    const { res, body } = await fetchJson("/api/friend/pending", { headers: authHeaders(this.token) });
+    if (!body) throw Object.assign(new Error("network"), { offline: true });
+    if (!res.ok || body.ok === false) throw Object.assign(new Error(body.error || "friend_failed"), { status: res.status, body });
+    return body;
+  }
+
+  async friendStatus() {
+    const { res, body } = await fetchJson("/api/friend/status", { headers: authHeaders(this.token) });
+    if (!body) throw Object.assign(new Error("network"), { offline: true });
+    if (!res.ok || body.ok === false) throw Object.assign(new Error(body.error || "friend_failed"), { status: res.status, body });
+    return body;
+  }
+
+  async friendRequest(code) {
+    const { res, body } = await fetchJson("/api/friend/request", {
+      method: "POST",
+      headers: authHeaders(this.token, { "content-type": "application/json" }),
+      body: JSON.stringify({ code })
+    });
+    if (!body) throw Object.assign(new Error("network"), { offline: true });
+    if (!res.ok || body.ok === false) throw Object.assign(new Error(body.error || "friend_failed"), { status: res.status, body });
+    return body;
+  }
+
+  async friendUnbind() {
+    const { res, body } = await fetchJson("/api/friend/unbind", {
+      method: "POST",
+      headers: authHeaders(this.token, { "content-type": "application/json" }),
+      body: "{}"
+    });
+    if (!body) throw Object.assign(new Error("network"), { offline: true });
+    if (!res.ok || body.ok === false) throw Object.assign(new Error(body.error || "friend_failed"), { status: res.status, body });
+    return body;
+  }
+
   async heartbeat(visible) {
     try {
       return await this.action("heartbeat", { visible: !!visible }, 6000);
@@ -467,6 +510,26 @@ class CloudApi {
       return { ok: true, result, state: this.stateValue, events, now: new Date(now).toISOString() };
     }
     throw Object.assign(new Error("conflict"), { status: 409 });
+  }
+
+  async friendCode() {
+    return cloudRpc("friend_code_for", { p_token: this.token });
+  }
+
+  async friendPending() {
+    return cloudRpc("friend_pending", { p_token: this.token });
+  }
+
+  async friendStatus() {
+    return cloudRpc("friend_status", { p_token: this.token });
+  }
+
+  async friendRequest(code) {
+    return cloudRpc("friend_request", { p_token: this.token, p_code: code });
+  }
+
+  async friendUnbind() {
+    return cloudRpc("friend_unbind", { p_token: this.token });
   }
 
   async heartbeat(visible) {

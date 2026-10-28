@@ -86,6 +86,28 @@
         </div>
       </article>
 
+      <article class="pcard friend-card">
+        <div class="card-head">
+          <h2>密友</h2>
+          <span class="tag">BOND</span>
+        </div>
+        <div class="friend-panel" id="pFriendPanel">
+          <div class="friend-code-row">
+            <div>
+              <span class="friend-kicker">我的好友码</span>
+              <b class="friend-code" id="pFriendCode">------</b>
+            </div>
+            <button class="friend-copy" id="pFriendCopy" type="button">复制</button>
+          </div>
+          <p class="friend-hint" id="pFriendHint">把好友码发给对方，双方都发送申请后才会绑定。</p>
+          <div class="friend-form" id="pFriendForm">
+            <input id="pFriendInput" maxlength="12" autocomplete="off" placeholder="输入对方好友码，如 M-7K3P9Q" />
+            <button class="friend-send" id="pFriendSend" type="button">发送申请</button>
+          </div>
+          <div class="friend-linked" id="pFriendLinked" hidden></div>
+        </div>
+      </article>
+
       <article class="pcard chart-card">
         <div class="card-head chart-head">
           <div>
@@ -191,7 +213,7 @@
       </article>
 
       <footer class="pfoot">
-        <span class="hand" id="pVersion">墨墨 v1.4.2.5</span>
+        <span class="hand" id="pVersion">墨墨 v1.5.0</span>
         <span id="pStorage">云端同步 · 数据保存在 Supabase</span>
       </footer>
     </div>

@@ -13,7 +13,8 @@ const S = {
   connected: false,
   bootstrap: null,
   offline: false,
-  weekOffset: 0
+  weekOffset: 0,
+  friend: null
 };
 
 const els = {
@@ -60,7 +61,14 @@ const els = {
   addresses: $("#pAddresses"),
   live: $("#pLive"),
   modal: $("#pModal"),
-  modalCard: $("#pModalCard")
+  modalCard: $("#pModalCard"),
+  friendCode: $("#pFriendCode"),
+  friendHint: $("#pFriendHint"),
+  friendForm: $("#pFriendForm"),
+  friendInput: $("#pFriendInput"),
+  friendSend: $("#pFriendSend"),
+  friendLinked: $("#pFriendLinked"),
+  friendCopy: $("#pFriendCopy")
 };
 
 let toastTimer = null;
@@ -94,6 +102,7 @@ async function init() {
       setInterval(() => heartbeat(), 20000);
     }
     renderSync();
+    refreshFriend();
   } catch (err) {
     if (err && err.needsAuth) {
       location.replace("/");
@@ -115,6 +124,15 @@ function bindStatic() {
     toast("地址已复制");
   });
   $("#logoutBtn").addEventListener("click", openLogout);
+  if (els.friendSend) els.friendSend.addEventListener("click", sendFriendRequest);
+  if (els.friendCopy) els.friendCopy.addEventListener("click", async () => {
+    if (!els.friendCode || !els.friendCode.textContent || els.friendCode.textContent === "------") return;
+    await Shell.copy(els.friendCode.textContent);
+    toast("好友码已复制");
+  });
+  if (els.friendInput) els.friendInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sendFriendRequest();
+  });
   $("#chartPrev").addEventListener("click", () => {
     S.weekOffset -= 1;
     renderChart(S.state);
@@ -200,7 +218,7 @@ function render(state) {
   els.dialEmoji.textContent = mood.emoji;
   els.dialValue.textContent = Math.round(s.mood);
   els.pTag.textContent = `DAY ${String(days).padStart(2, "0")}`;
-  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.4.2.5"}`;
+  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.5.0"}`;
   if (els.pStorage) els.pStorage.textContent = "云端同步 · 数据保存在 Supabase";
 
   const fullness = Number(s.fullness) || 0;
@@ -249,6 +267,98 @@ function render(state) {
   renderExercises(s);
   renderSleep(s);
   renderSync();
+}
+
+function friendStatusText(status) {
+  return ({ sleeping: "睡觉中", outing: "出游中", exercise: "运动中" })[status] || "在房间里";
+}
+
+function friendAvatar(app) {
+  return app === "momo" ? "/assets/friend-momo.png" : "/assets/friend-wowo.png";
+}
+
+async function refreshFriend() {
+  if (!S.api || S.api.offline) return;
+  try {
+    const [code, status] = await Promise.all([S.api.friendCode(), S.api.friendStatus()]);
+    if (!code || code.ok === false) return;
+    S.friend = status || null;
+    if (els.friendCode) els.friendCode.textContent = code.code || "------";
+    renderFriend();
+  } catch (_) {
+    if (els.friendHint && !S.friend) els.friendHint.textContent = "好友服务暂时连不上，稍后再试。";
+  }
+}
+
+function renderFriend() {
+  const f = S.friend;
+  if (!els.friendHint) return;
+  const pending = Number(f && f.pending || 0);
+  const linked = f && f.linked;
+  if (linked) {
+    if (els.friendForm) els.friendForm.hidden = true;
+    if (els.friendLinked) {
+      els.friendLinked.hidden = false;
+      els.friendLinked.innerHTML = `
+        <img src="${friendAvatar(linked.app)}" alt="${escapeHtml(linked.name || "密友")}">
+        <div>
+          <div class="friend-name">${escapeHtml(linked.name || "密友")}</div>
+          <div class="friend-sub">${escapeHtml(friendStatusText(linked.status))} · 心情 ${Math.round(Number(linked.mood) || 0)}</div>
+        </div>
+        <button class="friend-unbind" type="button">解除</button>`;
+      const unbind = els.friendLinked.querySelector(".friend-unbind");
+      if (unbind) unbind.addEventListener("click", unbindFriend);
+    }
+    els.friendHint.textContent = "已经绑定。双方都发送过申请后，好友关系才成立。";
+    return;
+  }
+  if (els.friendForm) els.friendForm.hidden = false;
+  if (els.friendLinked) { els.friendLinked.hidden = true; els.friendLinked.innerHTML = ""; }
+  els.friendHint.textContent = pending > 0
+    ? `有 ${pending} 位用户向你发来申请。请向对方索取好友码，在下面回发申请，双方才会绑定。`
+    : "把好友码发给对方；你也要输入对方的好友码并发送申请，双方都发过才会绑定。";
+}
+
+async function sendFriendRequest() {
+  if (!S.api || !els.friendInput) return;
+  const code = String(els.friendInput.value || "").trim().toUpperCase();
+  if (!code) { toast("先输入对方好友码"); return; }
+  if (els.friendSend) els.friendSend.disabled = true;
+  try {
+    const out = await S.api.friendRequest(code);
+    if (out && out.status === "matched") {
+      toast("绑定成功");
+      els.friendInput.value = "";
+    } else {
+      toast("申请已发出，等对方也回发好友码");
+    }
+    await refreshFriend();
+  } catch (err) {
+    const reason = err && err.message;
+    const map = {
+      bad_code: "好友码不存在或格式不对",
+      same_app: "这是同一边的账号，要找对方 App 的用户",
+      already_linked: "你已经有密友了，先解除旧绑定",
+      target_linked: "对方已经有密友了",
+      self: "不能绑定自己"
+    };
+    toast(map[reason] || "发送失败，稍后再试");
+  } finally {
+    if (els.friendSend) els.friendSend.disabled = false;
+  }
+}
+
+async function unbindFriend() {
+  if (!S.api) return;
+  if (!confirm("确定解除密友绑定吗？")) return;
+  try {
+    await S.api.friendUnbind();
+    S.friend = null;
+    toast("已解除绑定");
+    await refreshFriend();
+  } catch (_) {
+    toast("解除失败，稍后再试");
+  }
 }
 
 function localKey(d) {

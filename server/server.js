@@ -725,6 +725,43 @@ data: ${JSON.stringify({ state, now: new Date().toISOString() })}
       }
       return handleEvents(req, res, url);
     }
+    if (pathname === "/api/friend/code" && req.method === "GET") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: false, error: "cloud_required" });
+      try { return send(res, 200, await cloud.friendCode(session.token)); }
+      catch (err) { return cloudFailure(res, err); }
+    }
+    if (pathname === "/api/friend/pending" && req.method === "GET") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: false, error: "cloud_required" });
+      try { return send(res, 200, await cloud.friendPending(session.token)); }
+      catch (err) { return cloudFailure(res, err); }
+    }
+    if (pathname === "/api/friend/status" && req.method === "GET") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: false, error: "cloud_required" });
+      try { return send(res, 200, await cloud.friendStatus(session.token)); }
+      catch (err) { return cloudFailure(res, err); }
+    }
+    if (pathname === "/api/friend/request" && req.method === "POST") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: false, error: "cloud_required" });
+      try {
+        const body = await readBody(req);
+        return send(res, 200, await cloud.friendRequest(session.token, String(body.code || "")));
+      } catch (err) { return cloudFailure(res, err); }
+    }
+    if (pathname === "/api/friend/unbind" && req.method === "POST") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: false, error: "cloud_required" });
+      try { return send(res, 200, await cloud.friendUnbind(session.token)); }
+      catch (err) { return cloudFailure(res, err); }
+    }
     if (pathname === "/api/action" && req.method === "POST") {
       const session = await authenticate(req, url);
       if (!session) return authRequired(res);

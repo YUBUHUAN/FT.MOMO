@@ -94,6 +94,26 @@ class CloudBackend {
     };
   }
 
+  async friendCode(token) {
+    return this.rpc("friend_code_for", { p_token: token });
+  }
+
+  async friendPending(token) {
+    return this.rpc("friend_pending", { p_token: token });
+  }
+
+  async friendStatus(token) {
+    return this.rpc("friend_status", { p_token: token });
+  }
+
+  async friendRequest(token, code) {
+    return this.rpc("friend_request", { p_token: token, p_code: code });
+  }
+
+  async friendUnbind(token) {
+    return this.rpc("friend_unbind", { p_token: token });
+  }
+
   async saveState(token, state, baseRev) {
     return this.rpc("momo_save_state", {
       p_token: token,

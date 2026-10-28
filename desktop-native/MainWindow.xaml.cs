@@ -175,6 +175,7 @@ public partial class MainWindow : Window
         ExerciseBtn.Click += (_, _) => OpenExercise();
         BackgroundBtn.Click += (_, _) => OpenBackgroundSheet();
         ProfileBtn.Click += (_, _) => OpenProfile();
+        FriendBtn.Click += (_, _) => OpenFriend();
         StopExerciseBtn.Click += (_, _) => _ = StopExerciseNowAsync();
         ExercisePeekBtn.Click += (_, _) => PeekExercise();
         MoodPill.MouseLeftButtonDown += (_, _) => OpenProfile();
@@ -1825,6 +1826,147 @@ public partial class MainWindow : Window
         OpenSheet(title, "全部记录", body, null);
     }
 
+    private string FriendStatusText(string status) => status switch
+    {
+        "sleeping" => "睡觉中",
+        "outing" => "出游中",
+        "exercise" => "运动中",
+        _ => "在房间里"
+    };
+
+    private async void OpenFriend()
+    {
+        var body = new StackPanel();
+        body.Children.Add(Txt("正在读取好友信息……", 11, "Muted", null, null, 0, 8));
+        OpenSheet("密友", "一对一绑定，双方都要发送申请", body, null);
+
+        JsonNode? code = null;
+        JsonNode? status = null;
+        try
+        {
+            code = await _api.FriendCodeAsync();
+            status = await _api.FriendStatusAsync();
+        }
+        catch (Exception ex)
+        {
+            body.Children.Clear();
+            body.Children.Add(Txt(ex.Message == "unauthorized" ? "登录已过期，请重新登录。" : "好友服务暂时不可用。", 11, "Muted", null, null, 0, 8));
+            return;
+        }
+
+        body.Children.Clear();
+        var codeText = Str(code, "code", "------");
+        var codeRow = new Grid { Margin = new Thickness(0, 0, 0, 8) };
+        codeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        codeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var codeStack = new StackPanel();
+        codeStack.Children.Add(Txt("我的好友码", 9, "Muted"));
+        codeStack.Children.Add(Txt(codeText, 22, "Ink", new FontFamily("Georgia")));
+        codeRow.Children.Add(codeStack);
+        var copy = new Button { Content = "复制", Style = (Style)FindResource("SmallButton"), VerticalAlignment = VerticalAlignment.Center };
+        copy.Click += (_, _) => { try { System.Windows.Clipboard.SetText(codeText); ShowToast("好友码已复制"); } catch { } };
+        Grid.SetColumn(copy, 1);
+        codeRow.Children.Add(copy);
+        body.Children.Add(codeRow);
+
+        var pending = (int)Num(status, "pending", 0);
+        var linked = status?["linked"] as JsonObject;
+        if (linked != null)
+        {
+            body.Children.Add(Txt("已绑定密友", 9, "Muted", null, null, 0, 4));
+            var card = new Border
+            {
+                Background = (Brush)FindResource("Paper2"),
+                CornerRadius = new CornerRadius(14),
+                Padding = new Thickness(12),
+                Margin = new Thickness(0, 0, 0, 10)
+            };
+            var g = new Grid();
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(54) });
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var app = Str(linked, "app", "wowo");
+            var image = new Image { Width = 48, Height = 48, Stretch = Stretch.UniformToFill };
+            try
+            {
+                image.Source = new BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", app == "momo" ? "friend-momo.png" : "friend-wowo.png"), UriKind.Absolute));
+            }
+            catch { }
+            g.Children.Add(new Border { Width = 48, Height = 48, CornerRadius = new CornerRadius(24), ClipToBounds = true, Child = image });
+            var info = new StackPanel { Margin = new Thickness(10, 0, 0, 0) };
+            info.Children.Add(Txt(Str(linked, "name", "密友"), 14, "Ink"));
+            info.Children.Add(Txt($"{FriendStatusText(Str(linked, "status"))} · 心情 {Math.Round(Num(linked, "mood", 50))}", 10, "Muted"));
+            Grid.SetColumn(info, 1);
+            g.Children.Add(info);
+            card.Child = g;
+            body.Children.Add(card);
+            var unbind = new Button { Content = "解除绑定", Style = (Style)FindResource("SmallButton"), HorizontalAlignment = System.Windows.HorizontalAlignment.Left };
+            unbind.Click += async (_, _) =>
+            {
+                try
+                {
+                    await _api.FriendUnbindAsync();
+                    ShowToast("已解除绑定");
+                    OpenFriend();
+                }
+                catch { ShowToast("解除失败，稍后再试"); }
+            };
+            body.Children.Add(unbind);
+            return;
+        }
+
+        if (pending > 0)
+        {
+            body.Children.Add(Txt($"有 {pending} 位用户向你发来申请。请向对方索取好友码，在下面回发申请。", 10.5, "Ink2", null, null, 0, 8, true));
+        }
+        else
+        {
+            body.Children.Add(Txt("把好友码发给对方；你也要输入对方的码并发送申请。双方都发过，才会绑定。", 10.5, "Muted", null, null, 0, 8, true));
+        }
+
+        body.Children.Add(Txt("对方好友码", 9, "Muted"));
+        var input = new System.Windows.Controls.TextBox
+        {
+            FontSize = 13,
+            Padding = new Thickness(9, 7, 9, 7),
+            Margin = new Thickness(0, 4, 0, 8),
+            BorderBrush = (Brush)FindResource("LineStrong"),
+            BorderThickness = new Thickness(1.5),
+            Background = (Brush)FindResource("Paper2"),
+            Foreground = (Brush)FindResource("Ink"),
+            MaxLength = 12
+        };
+        body.Children.Add(input);
+        var send = new Button { Content = "发送绑定申请", Style = (Style)FindResource("PrimaryButton"), HorizontalAlignment = System.Windows.HorizontalAlignment.Left };
+        send.Click += async (_, _) =>
+        {
+            var target = (input.Text ?? "").Trim().ToUpperInvariant();
+            if (target.Length == 0) { ShowToast("先输入对方好友码"); return; }
+            send.IsEnabled = false;
+            try
+            {
+                var result = await _api.FriendRequestAsync(target);
+                ShowToast(Str(result, "status") == "matched" ? "绑定成功" : "申请已发出，等对方回发");
+                OpenFriend();
+            }
+            catch (ApiException ex)
+            {
+                var msg = ex.Message switch
+                {
+                    "bad_code" => "好友码不存在或格式不对",
+                    "same_app" => "要找另一边 App 的用户",
+                    "already_linked" => "你已经有密友了",
+                    "target_linked" => "对方已经有密友了",
+                    "self" => "不能绑定自己",
+                    _ => "发送失败，稍后再试"
+                };
+                ShowToast(msg);
+                send.IsEnabled = true;
+            }
+            catch { ShowToast("发送失败，稍后再试"); send.IsEnabled = true; }
+        };
+        body.Children.Add(send);
+    }
+
     private void OpenProfile()
     {
         TonePlayer.Open();
@@ -1946,7 +2088,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.4.2.5 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.5.0 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }

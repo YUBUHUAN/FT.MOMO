@@ -165,6 +165,50 @@ public sealed class ApiClient
         }
     }
 
+    public async Task<JsonNode> FriendCodeAsync() =>
+        await FriendGetAsync("api/friend/code");
+
+    public async Task<JsonNode> FriendPendingAsync() =>
+        await FriendGetAsync("api/friend/pending");
+
+    public async Task<JsonNode> FriendStatusAsync() =>
+        await FriendGetAsync("api/friend/status");
+
+    public async Task<JsonNode> FriendRequestAsync(string code) =>
+        await FriendPostAsync("api/friend/request", new JsonObject { ["code"] = code });
+
+    public async Task<JsonNode> FriendUnbindAsync() =>
+        await FriendPostAsync("api/friend/unbind", new JsonObject());
+
+    private async Task<JsonNode> FriendGetAsync(string path)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, path);
+        ApplyAuth(req);
+        using var res = await _http.SendAsync(req);
+        string json = await res.Content.ReadAsStringAsync();
+        JsonNode root = JsonNode.Parse(json) ?? throw new ApiException("空响应");
+        if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized) throw new ApiException("unauthorized");
+        if (!res.IsSuccessStatusCode || root["ok"]?.GetValue<bool>() == false)
+            throw new ApiException(root["error"]?.GetValue<string>() ?? "friend_failed", root);
+        return root;
+    }
+
+    private async Task<JsonNode> FriendPostAsync(string path, JsonObject body)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, path)
+        {
+            Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json")
+        };
+        ApplyAuth(req);
+        using var res = await _http.SendAsync(req);
+        string json = await res.Content.ReadAsStringAsync();
+        JsonNode root = JsonNode.Parse(json) ?? throw new ApiException("空响应");
+        if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized) throw new ApiException("unauthorized");
+        if (!res.IsSuccessStatusCode || root["ok"]?.GetValue<bool>() == false)
+            throw new ApiException(root["error"]?.GetValue<string>() ?? "friend_failed", root);
+        return root;
+    }
+
     public async Task LogoutAsync()
     {
         if (!HasSession) return;

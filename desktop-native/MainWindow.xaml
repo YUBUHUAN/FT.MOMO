@@ -95,6 +95,8 @@
                 ToolTip="让她出门走走" FontFamily="{StaticResource EmojiFont}" />
         <Button x:Name="ExerciseBtn" Style="{StaticResource RoundButton}" Content="🏃" Margin="0,0,0,8"
                 ToolTip="运动一下" FontFamily="{StaticResource EmojiFont}" />
+        <Button x:Name="FriendBtn" Style="{StaticResource RoundButton}" Content="🤝" Margin="0,0,0,8"
+                ToolTip="密友绑定" FontFamily="{StaticResource EmojiFont}" />
         <Button x:Name="ProfileBtn" Style="{StaticResource RoundButton}" Content="📔"
                 ToolTip="个人页面" FontFamily="{StaticResource EmojiFont}" />
       </StackPanel>

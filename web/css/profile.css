@@ -1222,3 +1222,22 @@ body.is-electron .pbar {
   font-family: var(--font-hand);
   font-size: 13px;
 }
+
+.friend-card .friend-panel { display: flex; flex-direction: column; gap: 10px; }
+.friend-code-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.friend-kicker { display: block; font-size: 10px; letter-spacing: .12em; color: var(--muted); margin-bottom: 3px; }
+.friend-code { font-family: Georgia, serif; font-size: 25px; letter-spacing: .08em; color: var(--ink); }
+.friend-copy { border: 1px solid var(--line-strong); background: transparent; color: var(--ink2); border-radius: 999px; padding: 6px 12px; font-size: 11px; cursor: pointer; }
+.friend-hint { margin: 0; font-size: 11.5px; line-height: 1.7; color: var(--muted); }
+.friend-form { display: flex; gap: 8px; }
+.friend-form input { flex: 1; min-width: 0; border: 1.5px solid var(--line-strong); border-radius: 12px; background: var(--paper2); color: var(--ink); padding: 9px 11px; font-size: 12px; outline: none; }
+.friend-form input:focus { border-color: var(--ink2); }
+.friend-send { border: 0; border-radius: 12px; background: var(--ink); color: var(--paper); padding: 0 14px; font-size: 12px; cursor: pointer; }
+.friend-linked { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 14px; background: var(--paper2); }
+.friend-linked img { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; }
+.friend-linked .friend-name { font-size: 15px; color: var(--ink); }
+.friend-linked .friend-sub { font-size: 10.5px; color: var(--muted); margin-top: 3px; }
+.friend-linked .friend-unbind { margin-left: auto; border: 1px solid var(--line-strong); background: transparent; border-radius: 999px; padding: 6px 10px; font-size: 10px; color: var(--muted); cursor: pointer; }
+.friend-pending { color: var(--blush-deep); font-size: 11px; }
+
+.friend-form[hidden], .friend-linked[hidden] { display: none !important; }
