@@ -591,11 +591,24 @@ body.is-electron .pbar {
   overflow-y: auto;
   padding-right: 4px;
   scrollbar-width: thin;
+  scrollbar-color: var(--ink2) var(--paper3);
 }
 
 .feed-list::-webkit-scrollbar,
 .trip-list::-webkit-scrollbar {
-  width: 4px;
+  width: 10px;
+}
+
+.feed-list::-webkit-scrollbar-track,
+.trip-list::-webkit-scrollbar-track {
+  background: var(--paper3);
+  border-radius: 5px;
+}
+
+.feed-list::-webkit-scrollbar-thumb,
+.trip-list::-webkit-scrollbar-thumb {
+  background: var(--ink2);
+  border-radius: 5px;
 }
 
 .feed-list {
