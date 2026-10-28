@@ -1795,6 +1795,36 @@ public partial class MainWindow : Window
 
     /* --------------------------------------------------------------- profile */
 
+    private void OpenRecordDetail(string kind)
+    {
+        if (State == null) return;
+        string title;
+        UIElement content;
+        switch (kind)
+        {
+            case "outing":
+                title = "出游手账";
+                content = BuildOutingLog(State, int.MaxValue);
+                break;
+            case "exercise":
+                title = "运动记录";
+                content = BuildExerciseLog(State, int.MaxValue);
+                break;
+            case "sleep":
+                title = "睡眠记录";
+                content = BuildSleepLog(State, int.MaxValue);
+                break;
+            default:
+                title = "最近吃了什么";
+                content = BuildFeedLog(State, int.MaxValue);
+                break;
+        }
+        var body = new StackPanel();
+        body.Children.Add(Txt("全部记录 · 上下滑动查看", 10, "Muted", null, null, 0, 8, true));
+        body.Children.Add(content);
+        OpenSheet(title, "全部记录", body, null);
+    }
+
     private void OpenProfile()
     {
         TonePlayer.Open();
@@ -1899,16 +1929,16 @@ public partial class MainWindow : Window
         body.Children.Add(Card("陪伴日历", "WEEK", chart));
 
         // outing log
-        body.Children.Add(Card("出游手账", "TRIPS", ScrollableCard(BuildOutingLog(s), 230)));
+        body.Children.Add(Card("出游手账", "TRIPS", BuildOutingLog(s), () => OpenRecordDetail("outing")));
 
         // exercise log
-        body.Children.Add(Card("运动记录", "SWEAT", ScrollableCard(BuildExerciseLog(s), 230)));
+        body.Children.Add(Card("运动记录", "SWEAT", BuildExerciseLog(s), () => OpenRecordDetail("exercise")));
 
         // sleep log
-        body.Children.Add(Card("睡眠记录", "SLEEP", ScrollableCard(BuildSleepLog(s), 190)));
+        body.Children.Add(Card("睡眠记录", "SLEEP", BuildSleepLog(s), () => OpenRecordDetail("sleep")));
 
         // feed log
-        body.Children.Add(Card("最近吃了什么", "FEED", ScrollableCard(BuildFeedLog(s), 245)));
+        body.Children.Add(Card("最近吃了什么", "FEED", BuildFeedLog(s), () => OpenRecordDetail("feed")));
 
         // account + sync
         body.Children.Add(Card("账号与同步", "SYNC", BuildPairPanel()));
@@ -1916,24 +1946,30 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.4.2.4 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.4.2.5 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }
 
-    private Border Card(string title, string tag, UIElement content)
+    private Border Card(string title, string tag, UIElement content, Action? onOpen = null)
     {
         var border = new Border
         {
             Style = (Style)FindResource("Card"),
             Margin = new Thickness(0, 0, 0, 10)
         };
+        if (onOpen != null)
+        {
+            border.Cursor = System.Windows.Input.Cursors.Hand;
+            border.ToolTip = "点开查看全部记录";
+            border.MouseLeftButtonUp += (_, _) => onOpen();
+        }
         var stack = new StackPanel();
         if (!string.IsNullOrEmpty(title))
         {
             var head = new Grid { Margin = new Thickness(0, 0, 0, 8) };
             head.Children.Add(Txt(title, 16, "Ink", (FontFamily)FindResource("HandFont")));
-            var tagText = Txt(tag, 8, "Muted", null, new FontFamily("Georgia"));
+            var tagText = Txt(onOpen == null ? tag : tag + "  ›", 8, "Muted", null, new FontFamily("Georgia"));
             tagText.HorizontalAlignment = System.Windows.HorizontalAlignment.Right;
             head.Children.Add(tagText);
             stack.Children.Add(head);
@@ -1982,7 +2018,7 @@ public partial class MainWindow : Window
         _ => "精神很好，可以一起动一动。"
     };
 
-    private UIElement BuildOutingLog(JsonNode s)
+    private UIElement BuildOutingLog(JsonNode s, int limit = 4)
     {
         var stack = new StackPanel();
         int rows = 0;
@@ -2015,7 +2051,7 @@ public partial class MainWindow : Window
         {
             foreach (JsonNode? item in history)
             {
-                if (item == null || rows >= 4) break;
+                if (item == null || rows >= limit) break;
                 var row = new Grid { Margin = new Thickness(0, 0, 0, 8) };
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -2046,7 +2082,7 @@ public partial class MainWindow : Window
         return stack;
     }
 
-    private UIElement BuildExerciseLog(JsonNode s)
+    private UIElement BuildExerciseLog(JsonNode s, int limit = 4)
     {
         var stack = new StackPanel();
         int rows = 0;
@@ -2079,7 +2115,7 @@ public partial class MainWindow : Window
         {
             foreach (JsonNode? item in history)
             {
-                if (item == null || rows >= 4) break;
+                if (item == null || rows >= limit) break;
                 string sub = $"{RelativeTime(Str(item, "at"))} · {Num(item, "actualMinutes", Num(item, "minutes", 3)):0} 分钟"
                              + (Bool(item, "early") ? " · 提前停下" : "")
                              + $" · 健康 +{Num(item, "healthDelta"):0.#} / 疲惫 +{Num(item, "fatigueDelta"):0.#}";
@@ -2317,22 +2353,7 @@ public partial class MainWindow : Window
         ShowModal(panel);
     }
 
-    private UIElement ScrollableCard(UIElement content, double maxHeight)
-    {
-        var scroll = new ScrollViewer
-        {
-            Content = content,
-            MaxHeight = maxHeight,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Visible,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-            PanningMode = PanningMode.VerticalOnly,
-            Padding = new Thickness(0, 0, 4, 0)
-        };
-        scroll.Resources.Add(typeof(System.Windows.Controls.Primitives.ScrollBar), (Style)FindResource("MomoScrollBar"));
-        return scroll;
-    }
-
-    private UIElement BuildSleepLog(JsonNode s)
+    private UIElement BuildSleepLog(JsonNode s, int limit = 4)
     {
         var stack = new StackPanel();
         int rows = 0;
@@ -2361,7 +2382,7 @@ public partial class MainWindow : Window
         {
             foreach (JsonNode? item in log)
             {
-                if (item == null || rows >= 4) break;
+                if (item == null || rows >= limit) break;
                 var row = new Grid { Margin = new Thickness(0, 0, 0, 8) };
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -2385,7 +2406,7 @@ public partial class MainWindow : Window
         return stack;
     }
 
-    private UIElement BuildFeedLog(JsonNode s)
+    private UIElement BuildFeedLog(JsonNode s, int limit = 4)
     {
         var stack = new StackPanel();
         if (s["feedLog"] is not JsonArray log || log.Count == 0)
@@ -2396,7 +2417,7 @@ public partial class MainWindow : Window
         int count = 0;
         foreach (JsonNode? item in log)
         {
-            if (item == null || count++ >= 4) break;
+            if (item == null || count++ >= limit) break;
             var row = new Grid { Margin = new Thickness(0, 0, 0, 8) };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
