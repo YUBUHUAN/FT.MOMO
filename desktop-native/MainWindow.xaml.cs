@@ -41,6 +41,7 @@ public partial class MainWindow : Window
 
     private readonly DispatcherTimer _poll = new();
     private readonly DispatcherTimer _heartbeat = new();
+    private readonly DispatcherTimer _friendPoll = new();
     private readonly DispatcherTimer _awayTimer = new();
     private readonly DispatcherTimer _exerciseTimer = new();
     private readonly DispatcherTimer _bubbleHide = new();
@@ -144,6 +145,8 @@ public partial class MainWindow : Window
         _poll.Tick += async (_, _) => await PollAsync();
         _heartbeat.Interval = TimeSpan.FromSeconds(15);
         _heartbeat.Tick += async (_, _) => await HeartbeatAsync();
+        _friendPoll.Interval = TimeSpan.FromSeconds(8);
+        _friendPoll.Tick += async (_, _) => await FriendPollAsync();
         _awayTimer.Interval = TimeSpan.FromSeconds(1);
         _awayTimer.Tick += (_, _) => AwayTick();
         _exerciseTimer.Interval = TimeSpan.FromSeconds(1);
@@ -206,6 +209,7 @@ public partial class MainWindow : Window
         RenderState();
         _poll.Start();
         _heartbeat.Start();
+        _friendPoll.Start();
         _ = HeartbeatAsync();
         BeginBreathe();
         CreateTray();
@@ -245,6 +249,7 @@ public partial class MainWindow : Window
         _closing = true;
         _poll.Stop();
         _heartbeat.Stop();
+        _friendPoll.Stop();
         _awayTimer.Stop();
         _bubbleHide.Stop();
         _typer.Stop();
@@ -1834,6 +1839,106 @@ public partial class MainWindow : Window
         _ => "在房间里"
     };
 
+    private async Task RefreshFriendStateAsync()
+    {
+        try { await _api.GetStateAsync(); RenderState(); } catch { }
+    }
+
+    private async Task FriendPollAsync()
+    {
+        if (!_api.HasSession || State == null) return;
+        try
+        {
+            var events = await _api.FriendEventsAsync();
+            var list = events?["events"] as JsonArray;
+            if (list != null)
+            {
+                foreach (JsonNode? ev in list)
+                {
+                    if (ev == null) continue;
+                    var type = Str(ev, "type");
+                    var payload = ev["payload"] as JsonObject;
+                    var from = payload == null ? "密友" : Str(payload, "from", "密友");
+                    if (type == "feed")
+                    {
+                        ShowBubble($"【{from}】趁你不注意，偷偷给你塞了一口{Str(payload, "food", "好吃的")}。", 4800);
+                        await _api.FriendEventAckAsync(Str(ev, "id"));
+                        await RefreshFriendStateAsync();
+                    }
+                    else if (type == "activity_invite")
+                    {
+                        FriendBtn.Content = "💌";
+                        FriendBtn.ToolTip = $"{from} 邀请你{(Str(payload, "kind") == "exercise" ? "双人运动" : "双人出游")}，点开回复";
+                        ShowBubble($"【{from}】想和你{(Str(payload, "kind") == "exercise" ? "一起运动" : "一起出门")}。打开🤝回复。", 5200);
+                    }
+                    else if (type == "activity_started")
+                    {
+                        ShowBubble($"和【{from}】开始了{Str(payload, "option", "双人活动")}。", 4800);
+                        await _api.FriendEventAckAsync(Str(ev, "id"));
+                        await RefreshFriendStateAsync();
+                    }
+                    else if (type == "activity_declined" || type == "activity_cancelled" || type == "activity_finished")
+                    {
+                        ShowBubble(type == "activity_declined" ? "对方拒绝了这次邀请。" : type == "activity_cancelled" ? "这次双人活动取消了。" : "双人活动结束了。", 3600);
+                        await _api.FriendEventAckAsync(Str(ev, "id"));
+                        await RefreshFriendStateAsync();
+                    }
+                }
+            }
+            var act = events?["activity"];
+            if (act != null && Str(act, "status") == "pending")
+                FriendBtn.Content = Str(act, "from") == "me" ? "⏳" : "💌";
+            else if (act != null && Str(act, "status") == "active")
+                FriendBtn.Content = "🎈";
+            else if (list == null || list.Count == 0)
+                FriendBtn.Content = "🤝";
+        }
+        catch { }
+    }
+
+    private void FriendAction(string kind)
+    {
+        var options = kind == "feed"
+            ? new[] { ("cookie", "🍪 小饼干"), ("milk", "🥛 热牛奶"), ("cake", "🍰 草莓蛋糕"), ("oden", "🍢 关东煮") }
+            : kind == "outing"
+            ? new[] { ("公园", "🌳 公园"), ("海边", "🌊 海边"), ("游乐场", "🎡 游乐场") }
+            : new[] { ("羽毛球", "🏸 羽毛球"), ("跳绳", "🪢 跳绳"), ("散步", "🚶 散步") };
+        var panel = new StackPanel { Width = 280 };
+        panel.Children.Add(Txt(kind == "feed" ? "喂一口" : kind == "outing" ? "双人出游" : "双人运动", 17, "Ink", (FontFamily)FindResource("HandFont"), null, 0, 4));
+        panel.Children.Add(Txt(kind == "feed" ? "对方上线后会看到，并记进手帐。" : "固定 30 分钟，对方同意后开始。", 10.5, "Muted", null, null, 0, 10, true));
+        foreach (var (value, label) in options)
+        {
+            var btn = new Button { Content = label, Style = (Style)FindResource("SoftButton"), Margin = new Thickness(0, 0, 0, 6), HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch };
+            btn.Click += async (_, _) =>
+            {
+                try
+                {
+                    if (kind == "feed") await _api.FriendFeedAsync(value);
+                    else await _api.FriendActivityRequestAsync(kind, value);
+                    HideModal();
+                    ShowToast(kind == "feed" ? "已经悄悄塞过去了" : "申请已发出，等对方回复");
+                    OpenFriend();
+                }
+                catch (ApiException ex)
+                {
+                    ShowToast(ex.Message switch
+                    {
+                        "cooldown" => "刚喂过，过一会儿再来",
+                        "busy" => "对方现在没空",
+                        "pending_exists" => "已经有一条申请在等回复",
+                        "active_exists" => "已经有一条双人活动了",
+                        _ => "操作失败，稍后再试"
+                    });
+                }
+            };
+            panel.Children.Add(btn);
+        }
+        var cancel = new Button { Content = "取消", Style = (Style)FindResource("SmallButton"), HorizontalAlignment = System.Windows.HorizontalAlignment.Right };
+        cancel.Click += (_, _) => HideModal();
+        panel.Children.Add(cancel);
+        ShowModal(panel);
+    }
+
     private async void OpenFriend()
     {
         var body = new StackPanel();
@@ -1842,10 +1947,12 @@ public partial class MainWindow : Window
 
         JsonNode? code = null;
         JsonNode? status = null;
+        JsonNode? events = null;
         try
         {
             code = await _api.FriendCodeAsync();
             status = await _api.FriendStatusAsync();
+            events = await _api.FriendEventsAsync();
         }
         catch (Exception ex)
         {
@@ -1868,6 +1975,49 @@ public partial class MainWindow : Window
         Grid.SetColumn(copy, 1);
         codeRow.Children.Add(copy);
         body.Children.Add(codeRow);
+
+        JsonNode? invite = null;
+        if (events?["events"] is JsonArray evs)
+        {
+            invite = evs.FirstOrDefault(e => Str(e, "type") == "activity_invite");
+        }
+        if (invite != null)
+        {
+            var payload = invite["payload"] as JsonObject;
+            var from = payload == null ? "密友" : Str(payload, "from", "密友");
+            var kind = payload == null ? "outing" : Str(payload, "kind", "outing");
+            var option = payload == null ? "" : Str(payload, "option", "");
+            body.Children.Add(Txt($"【{from}】邀请你{ (kind == "exercise" ? "双人运动" : "双人出游") }（{option}）", 11, "Ink", null, null, 0, 6, true));
+            var inviteRow = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
+            var accept = new Button { Content = "同意", Style = (Style)FindResource("PrimaryButton"), Margin = new Thickness(0, 0, 6, 0) };
+            accept.Click += async (_, _) =>
+            {
+                try { await _api.FriendActivityRespondAsync(Str(invite, "id"), true); ShowToast("好，一起出发。"); OpenFriend(); }
+                catch (ApiException ex) { ShowToast(ex.Message == "busy" ? "对方现在没空" : "接受失败"); }
+            };
+            var decline = new Button { Content = "拒绝", Style = (Style)FindResource("SmallButton") };
+            decline.Click += async (_, _) =>
+            {
+                try { await _api.FriendActivityRespondAsync(Str(invite, "id"), false); await _api.FriendEventAckAsync(Str(invite, "id")); OpenFriend(); }
+                catch { ShowToast("操作失败"); }
+            };
+            inviteRow.Children.Add(accept); inviteRow.Children.Add(decline);
+            body.Children.Add(inviteRow);
+        }
+        var outgoing = events?["activity"];
+        if (outgoing != null && Str(outgoing, "status") == "pending" && Str(outgoing, "from") == "me")
+        {
+            var outRow = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
+            outRow.Children.Add(Txt("已发出双人活动邀请，等待对方回复。", 10.5, "Muted", null, null, 0, 0, true));
+            var cancelOut = new Button { Content = "取消", Style = (Style)FindResource("SmallButton"), Margin = new Thickness(8, 0, 0, 0) };
+            cancelOut.Click += async (_, _) =>
+            {
+                try { await _api.FriendActivityCancelAsync(Str(outgoing, "id")); ShowToast("已取消"); OpenFriend(); }
+                catch { ShowToast("取消失败"); }
+            };
+            outRow.Children.Add(cancelOut);
+            body.Children.Add(outRow);
+        }
 
         var pending = (int)Num(status, "pending", 0);
         var linked = status?["linked"] as JsonObject;
@@ -1899,6 +2049,14 @@ public partial class MainWindow : Window
             g.Children.Add(info);
             card.Child = g;
             body.Children.Add(card);
+            var actions = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
+            foreach (var (kind, label) in new[] { ("feed", "喂一口"), ("outing", "双人出游"), ("exercise", "双人运动") })
+            {
+                var action = new Button { Content = label, Style = (Style)FindResource("SmallButton"), Margin = new Thickness(0, 0, 6, 0) };
+                action.Click += (_, _) => FriendAction(kind);
+                actions.Children.Add(action);
+            }
+            body.Children.Add(actions);
             var unbind = new Button { Content = "解除绑定", Style = (Style)FindResource("SmallButton"), HorizontalAlignment = System.Windows.HorizontalAlignment.Left };
             unbind.Click += async (_, _) =>
             {
@@ -2088,7 +2246,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.5.0 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.7.0 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }

@@ -218,7 +218,7 @@ function render(state) {
   els.dialEmoji.textContent = mood.emoji;
   els.dialValue.textContent = Math.round(s.mood);
   els.pTag.textContent = `DAY ${String(days).padStart(2, "0")}`;
-  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.5.0"}`;
+  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.7.0"}`;
   if (els.pStorage) els.pStorage.textContent = "云端同步 · 数据保存在 Supabase";
 
   const fullness = Number(s.fullness) || 0;
@@ -305,9 +305,17 @@ function renderFriend() {
           <div class="friend-name">${escapeHtml(linked.name || "密友")}</div>
           <div class="friend-sub">${escapeHtml(friendStatusText(linked.status))} · 心情 ${Math.round(Number(linked.mood) || 0)}</div>
         </div>
-        <button class="friend-unbind" type="button">解除</button>`;
+        <button class="friend-unbind" type="button">解除</button>
+        <div class="friend-actions">
+          <button data-friend-action="feed" type="button">喂一口</button>
+          <button data-friend-action="outing" type="button">双人出游</button>
+          <button data-friend-action="exercise" type="button">双人运动</button>
+        </div>`;
       const unbind = els.friendLinked.querySelector(".friend-unbind");
       if (unbind) unbind.addEventListener("click", unbindFriend);
+      els.friendLinked.querySelectorAll("[data-friend-action]").forEach((btn) => {
+        btn.addEventListener("click", () => openFriendAction(btn.dataset.friendAction));
+      });
     }
     els.friendHint.textContent = "已经绑定。双方都发送过申请后，好友关系才成立。";
     return;
@@ -317,6 +325,48 @@ function renderFriend() {
   els.friendHint.textContent = pending > 0
     ? `有 ${pending} 位用户向你发来申请。请向对方索取好友码，在下面回发申请，双方才会绑定。`
     : "把好友码发给对方；你也要输入对方的好友码并发送申请，双方都发过才会绑定。";
+}
+
+function openFriendAction(kind) {
+  const config = kind === "feed"
+    ? { title: "喂一口", hint: "悄悄塞给对方，对方上线会看到。", options: [
+        ["cookie", "🍪 小饼干"], ["milk", "🥛 热牛奶"], ["cake", "🍰 草莓蛋糕"], ["oden", "🍢 关东煮"]] }
+    : kind === "outing"
+    ? { title: "双人出游", hint: "发起后等对方同意，固定 30 分钟。", options: [
+        ["公园", "🌳 公园"], ["海边", "🌊 海边"], ["游乐场", "🎡 游乐场"]] }
+    : { title: "双人运动", hint: "发起后等对方同意，固定 30 分钟。", options: [
+        ["羽毛球", "🏸 羽毛球"], ["跳绳", "🪢 跳绳"], ["散步", "🚶 散步"]] };
+  openModal(
+    `<h3>${config.title}</h3>
+     <p>${config.hint}</p>
+     <div class="friend-choice">
+       ${config.options.map(([value, label]) => `<button type="button" data-value="${escapeHtml(value)}">${label}</button>`).join("")}
+     </div>
+     <div class="pmodal-actions"><button class="btn small ghost" id="friendActionCancel">取消</button></div>`,
+    (root) => {
+      $("#friendActionCancel", root).addEventListener("click", closeModal);
+      root.querySelectorAll("[data-value]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          try {
+            if (kind === "feed") await S.api.friendFeed(btn.dataset.value);
+            else await S.api.friendActivityRequest(kind, btn.dataset.value);
+            closeModal();
+            toast(kind === "feed" ? "已经悄悄塞过去了" : "申请已发出，等对方回复");
+            await refreshFriend();
+          } catch (err) {
+            const msg = err.message === "cooldown" ? "刚喂过，过一会儿再来"
+              : err.message === "busy" ? "对方现在没空，或者在忙别的"
+              : err.message === "active_exists" ? "已经有一条双人活动了"
+              : err.message === "pending_exists" ? "已经有一条申请在等回复"
+              : "操作失败，稍后再试";
+            toast(msg);
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+  );
 }
 
 async function sendFriendRequest() {

@@ -280,6 +280,57 @@ class LocalApi {
     return body;
   }
 
+  async friendFeed(foodId) {
+    const { res, body } = await fetchJson("/api/friend/feed", {
+      method: "POST", headers: authHeaders(this.token, { "content-type": "application/json" }),
+      body: JSON.stringify({ foodId })
+    });
+    if (!res.ok || body.ok === false) throw Object.assign(new Error(body.error || "friend_failed"), { status: res.status, body });
+    return body;
+  }
+
+  async friendActivityRequest(kind, option) {
+    const { res, body } = await fetchJson("/api/friend/activity/request", {
+      method: "POST", headers: authHeaders(this.token, { "content-type": "application/json" }),
+      body: JSON.stringify({ kind, option })
+    });
+    if (!res.ok || body.ok === false) throw Object.assign(new Error(body.error || "friend_failed"), { status: res.status, body });
+    return body;
+  }
+
+  async friendActivityRespond(id, accept) {
+    const { res, body } = await fetchJson("/api/friend/activity/respond", {
+      method: "POST", headers: authHeaders(this.token, { "content-type": "application/json" }),
+      body: JSON.stringify({ id, accept })
+    });
+    if (!res.ok || body.ok === false) throw Object.assign(new Error(body.error || "friend_failed"), { status: res.status, body });
+    return body;
+  }
+
+  async friendActivityCancel(id) {
+    const { res, body } = await fetchJson("/api/friend/activity/cancel", {
+      method: "POST", headers: authHeaders(this.token, { "content-type": "application/json" }),
+      body: JSON.stringify({ id })
+    });
+    if (!res.ok || body.ok === false) throw Object.assign(new Error(body.error || "friend_failed"), { status: res.status, body });
+    return body;
+  }
+
+  async friendEvents() {
+    const { res, body } = await fetchJson("/api/friend/events", { headers: authHeaders(this.token) });
+    if (!res.ok || body.ok === false) throw Object.assign(new Error(body.error || "friend_failed"), { status: res.status, body });
+    return body;
+  }
+
+  async friendEventAck(id) {
+    const { res, body } = await fetchJson("/api/friend/events/ack", {
+      method: "POST", headers: authHeaders(this.token, { "content-type": "application/json" }),
+      body: JSON.stringify({ id })
+    });
+    if (!res.ok || body.ok === false) throw Object.assign(new Error(body.error || "friend_failed"), { status: res.status, body });
+    return body;
+  }
+
   async friendUnbind() {
     const { res, body } = await fetchJson("/api/friend/unbind", {
       method: "POST",
@@ -530,6 +581,30 @@ class CloudApi {
 
   async friendUnbind() {
     return cloudRpc("friend_unbind", { p_token: this.token });
+  }
+
+  async friendFeed(foodId) {
+    return cloudRpc("friend_feed", { p_token: this.token, p_food_id: foodId });
+  }
+
+  async friendActivityRequest(kind, option) {
+    return cloudRpc("friend_activity_request", { p_token: this.token, p_kind: kind, p_option: option });
+  }
+
+  async friendActivityRespond(id, accept) {
+    return cloudRpc("friend_activity_respond", { p_token: this.token, p_id: id, p_accept: !!accept });
+  }
+
+  async friendActivityCancel(id) {
+    return cloudRpc("friend_activity_cancel", { p_token: this.token, p_id: id });
+  }
+
+  async friendEvents() {
+    return cloudRpc("friend_events", { p_token: this.token });
+  }
+
+  async friendEventAck(id) {
+    return cloudRpc("friend_event_ack", { p_token: this.token, p_id: id });
   }
 
   async heartbeat(visible) {

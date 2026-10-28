@@ -1241,3 +1241,8 @@ body.is-electron .pbar {
 .friend-pending { color: var(--blush-deep); font-size: 11px; }
 
 .friend-form[hidden], .friend-linked[hidden] { display: none !important; }
+
+.friend-actions { display: flex; gap: 6px; flex-basis: 100%; margin-top: 4px; flex-wrap: wrap; }
+.friend-actions button, .friend-choice button { border: 1px solid var(--line-strong); background: transparent; color: var(--ink2); border-radius: 10px; padding: 7px 10px; font-size: 10.5px; cursor: pointer; }
+.friend-choice { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+.friend-choice button { background: var(--paper2); font-size: 12px; padding: 10px 12px; }

@@ -114,6 +114,30 @@ class CloudBackend {
     return this.rpc("friend_unbind", { p_token: token });
   }
 
+  async friendFeed(token, foodId) {
+    return this.rpc("friend_feed", { p_token: token, p_food_id: foodId });
+  }
+
+  async friendActivityRequest(token, kind, option) {
+    return this.rpc("friend_activity_request", { p_token: token, p_kind: kind, p_option: option });
+  }
+
+  async friendActivityRespond(token, id, accept) {
+    return this.rpc("friend_activity_respond", { p_token: token, p_id: id, p_accept: !!accept });
+  }
+
+  async friendActivityCancel(token, id) {
+    return this.rpc("friend_activity_cancel", { p_token: token, p_id: id });
+  }
+
+  async friendEvents(token) {
+    return this.rpc("friend_events", { p_token: token });
+  }
+
+  async friendEventAck(token, id) {
+    return this.rpc("friend_event_ack", { p_token: token, p_id: id });
+  }
+
   async saveState(token, state, baseRev) {
     return this.rpc("momo_save_state", {
       p_token: token,

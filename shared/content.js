@@ -6,7 +6,7 @@
   if (typeof module === "object" && module.exports) module.exports = factory();
   else root.MomoContent = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  const VERSION = "1.5.0";
+  const VERSION = "1.7.0";
   const DEFAULT_NAME = "墨墨";
 
   const MOOD_LABELS = [
@@ -72,6 +72,29 @@
       "你再戳，我就要把你的手指画成小土豆了。",
       "呼……停一下啦。让我缓一缓。",
       "我知道你在逗我。我假装不知道。"
+    ]
+  };
+
+
+  const FRIEND_LINES = {
+    feed: [
+      "【{name}】趁你不注意，偷偷给你塞了一口{food}。",
+      "【{name}】把{food}放在你手边，假装什么都没发生。",
+      "你发现桌上多了一份{food}，旁边写着【{name}】的名字。",
+      "【{name}】说只是顺路，但{food}还是热的。",
+      "【{name}】从背后探出头，把{food}塞进你手里。"
+    ],
+    outing_start: [
+      "你和【{name}】一起去了{option}，风把两个人的影子吹到一起。",
+      "【{name}】拉着你出门，说{option}今天的天气刚刚好。",
+      "两个人一起去了{option}，路上谁也没提回去的事。",
+      "【{name}】在{option}给你拍了很多照片，每一张都在笑。"
+    ],
+    exercise_start: [
+      "你和【{name}】在{option}，输的人要请汽水。",
+      "【{name}】说只是随便动动，结果比谁都认真。",
+      "你和【{name}】一起{option}，汗水把坏心情都冲走了。",
+      "【{name}】在旁边给你数拍子，数着数着自己也笑了。"
     ]
   };
 
@@ -1124,6 +1147,7 @@
     MOOD_LABELS,
     TAP_LINES,
     SLEEP_MURMURS,
+    FRIEND_LINES,
     HUNGER_LINES,
     SPAM_MARKS,
     FEED,

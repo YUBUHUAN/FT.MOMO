@@ -180,6 +180,24 @@ public sealed class ApiClient
     public async Task<JsonNode> FriendUnbindAsync() =>
         await FriendPostAsync("api/friend/unbind", new JsonObject());
 
+    public async Task<JsonNode> FriendFeedAsync(string foodId) =>
+        await FriendPostAsync("api/friend/feed", new JsonObject { ["foodId"] = foodId });
+
+    public async Task<JsonNode> FriendActivityRequestAsync(string kind, string option) =>
+        await FriendPostAsync("api/friend/activity/request", new JsonObject { ["kind"] = kind, ["option"] = option });
+
+    public async Task<JsonNode> FriendActivityRespondAsync(string id, bool accept) =>
+        await FriendPostAsync("api/friend/activity/respond", new JsonObject { ["id"] = id, ["accept"] = accept });
+
+    public async Task<JsonNode> FriendActivityCancelAsync(string id) =>
+        await FriendPostAsync("api/friend/activity/cancel", new JsonObject { ["id"] = id });
+
+    public async Task<JsonNode> FriendEventsAsync() =>
+        await FriendGetAsync("api/friend/events");
+
+    public async Task<JsonNode> FriendEventAckAsync(string id) =>
+        await FriendPostAsync("api/friend/events/ack", new JsonObject { ["id"] = id });
+
     private async Task<JsonNode> FriendGetAsync(string path)
     {
         using var req = new HttpRequestMessage(HttpMethod.Get, path);

@@ -33,6 +33,8 @@ const S = {
   lastBurstCount: 0,
   lastHungerLevel: "",
   lastSleeping: false,
+  friendInvite: null,
+  friendPoll: null,
   press: null,
   dragging: false,
   ignore: false,
@@ -148,6 +150,7 @@ async function init() {
       const state = await api.state();
       applyState(state, false);
       startTimers();
+      startFriendWatch();
     }
   } catch (err) {
     if (err && err.needsAuth) {
@@ -164,6 +167,141 @@ async function init() {
 
   finishBoot();
   setTimeout(firstTip, 1500);
+}
+
+function friendKindLabel(kind) {
+  return kind === "exercise" ? "双人运动" : "双人出游";
+}
+
+function friendStatusLabel(status) {
+  return ({ sleeping: "睡觉中", outing: "出游中", exercise: "运动中" })[status] || "在房间里";
+}
+
+function hideFriendStrip() {
+  const strip = document.getElementById("friendStrip");
+  if (strip) strip.classList.add("hidden");
+}
+
+function showFriendStrip(text, actions) {
+  const strip = document.getElementById("friendStrip");
+  const label = document.getElementById("friendStripText");
+  const box = document.getElementById("friendStripActions");
+  if (!strip || !label || !box) return;
+  label.textContent = text;
+  box.innerHTML = "";
+  (actions || []).forEach((a) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = a.label;
+    if (a.primary) btn.className = "primary";
+    btn.addEventListener("click", a.onClick);
+    box.appendChild(btn);
+  });
+  strip.classList.remove("hidden");
+}
+
+function showFriendLine(lines, data) {
+  const list = C.FRIEND_LINES && C.FRIEND_LINES[lines] || [];
+  let line = list.length ? pick(list) : "【{name}】来找你了。";
+  Object.entries(data || {}).forEach(([k, v]) => { line = line.split(`{${k}}`).join(v); });
+  if (S.bubble) S.bubble.show(line, { duration: 5200 });
+}
+
+async function refreshFriendState() {
+  try {
+    if (!S.api) return;
+    const state = await S.api.state();
+    applyState(state);
+  } catch (_) { }
+}
+
+async function acceptFriendInvite(id) {
+  if (!S.api || !id) return;
+  try {
+    await S.api.friendActivityRespond(id, true);
+    S.friendInvite = null;
+    hideFriendStrip();
+    toast("好，一起出发。");
+    await refreshFriendState();
+  } catch (err) {
+    toast(err.message === "busy" ? "对方现在没空，或者你们正在忙别的。" : "接受失败，稍后再试");
+  }
+}
+
+async function declineFriendInvite(id) {
+  if (!S.api || !id) return;
+  try {
+    await S.api.friendActivityRespond(id, false);
+    S.friendInvite = null;
+    hideFriendStrip();
+    toast("已拒绝这次邀请。");
+  } catch (_) { toast("操作失败，稍后再试"); }
+}
+
+async function cancelFriendActivity(id) {
+  if (!S.api || !id) return;
+  try {
+    await S.api.friendActivityCancel(id);
+    hideFriendStrip();
+    toast("已取消。");
+    await refreshFriendState();
+  } catch (_) { toast("取消失败，稍后再试"); }
+}
+
+async function checkFriendEvents() {
+  if (!S.api || !S.state || S.api.offline) return;
+  try {
+    const out = await S.api.friendEvents();
+    if (!out || out.ok === false) return;
+    const events = out.events || [];
+    for (const ev of events) {
+      const p = ev.payload || {};
+      if (ev.type === "feed") {
+        showFriendLine("feed", { name: p.from || "密友", food: p.food || "好吃的" });
+        await S.api.friendEventAck(ev.id).catch(() => {});
+        refreshFriendState();
+      } else if (ev.type === "activity_invite") {
+        S.friendInvite = { id: p.id || (out.activity && out.activity.id), kind: p.kind, option: p.option, from: p.from };
+        showFriendStrip(`【${p.from || "密友"}】想和你${friendKindLabel(p.kind)}（${p.option || ""}）。`, [
+          { label: "同意", primary: true, onClick: () => acceptFriendInvite(S.friendInvite && S.friendInvite.id) },
+          { label: "拒绝", onClick: () => declineFriendInvite(S.friendInvite && S.friendInvite.id) }
+        ]);
+      } else if (ev.type === "activity_started") {
+        showFriendLine(p.kind === "exercise" ? "exercise_start" : "outing_start", { name: p.from || "密友", option: p.option || "" });
+        await S.api.friendEventAck(ev.id).catch(() => {});
+        refreshFriendState();
+      } else if (ev.type === "activity_declined" || ev.type === "activity_cancelled" || ev.type === "activity_finished") {
+        S.sfx.play("tap", 1);
+        const text = ev.type === "activity_declined" ? "对方拒绝了这次邀请。"
+          : ev.type === "activity_cancelled" ? "这次双人活动取消了。"
+          : "双人活动结束了。";
+        S.bubble && S.bubble.show(text, { duration: 3600 });
+        await S.api.friendEventAck(ev.id).catch(() => {});
+        refreshFriendState();
+      }
+    }
+
+    const act = out.activity;
+    const current = S.state.friendActivity;
+    if (current && current.endsAt > Date.now()) {
+      const left = Math.max(0, Math.ceil((current.endsAt - Date.now()) / 60000));
+      showFriendStrip(`和【${current.partner || "密友"}】${friendKindLabel(current.kind)}中 · 还剩 ${left} 分钟。`, [
+        { label: "提前结束", onClick: () => cancelFriendActivity(current.id) }
+      ]);
+    } else if (act && act.status === "pending" && act.from === "me") {
+      showFriendStrip(`已向【${S.friendInvite ? S.friendInvite.from : "密友"}】发出${friendKindLabel(act.kind)}邀请，等待回复。`, [
+        { label: "取消", onClick: () => cancelFriendActivity(act.id) }
+      ]);
+    } else if (!S.friendInvite) {
+      hideFriendStrip();
+    }
+  } catch (_) { }
+}
+
+function startFriendWatch() {
+  if (S.friendPoll) clearInterval(S.friendPoll);
+  checkFriendEvents();
+  S.friendPoll = setInterval(checkFriendEvents, 8000);
 }
 
 function finishBoot() {

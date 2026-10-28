@@ -7,10 +7,12 @@
 1. `cloud/wowo_schema.sql`
    - 创建 `wowo_accounts` / `wowo_sessions` / `wowo_states`
    - 创建 Wowo 原有 RPC
-2. `cloud/friends.sql`
+2. `cloud/friends_v3.sql`
    - 给两边账号加好友码
    - 创建 `friend_requests` / `friend_links`
    - 创建好友 RPC
+3. `cloud/friends_actions.sql`
+   - 好友投喂、双人出游/运动、通知事件
 
 运行完成后：
 

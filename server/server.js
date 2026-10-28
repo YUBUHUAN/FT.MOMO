@@ -762,6 +762,48 @@ data: ${JSON.stringify({ state, now: new Date().toISOString() })}
       try { return send(res, 200, await cloud.friendUnbind(session.token)); }
       catch (err) { return cloudFailure(res, err); }
     }
+    if (pathname === "/api/friend/feed" && req.method === "POST") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: false, error: "cloud_required" });
+      try { const body = await readBody(req); return send(res, 200, await cloud.friendFeed(session.token, String(body.foodId || ""))); }
+      catch (err) { return cloudFailure(res, err); }
+    }
+    if (pathname === "/api/friend/activity/request" && req.method === "POST") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: false, error: "cloud_required" });
+      try { const body = await readBody(req); return send(res, 200, await cloud.friendActivityRequest(session.token, String(body.kind || ""), String(body.option || ""))); }
+      catch (err) { return cloudFailure(res, err); }
+    }
+    if (pathname === "/api/friend/activity/respond" && req.method === "POST") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: false, error: "cloud_required" });
+      try { const body = await readBody(req); return send(res, 200, await cloud.friendActivityRespond(session.token, String(body.id || ""), !!body.accept)); }
+      catch (err) { return cloudFailure(res, err); }
+    }
+    if (pathname === "/api/friend/activity/cancel" && req.method === "POST") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: false, error: "cloud_required" });
+      try { const body = await readBody(req); return send(res, 200, await cloud.friendActivityCancel(session.token, String(body.id || ""))); }
+      catch (err) { return cloudFailure(res, err); }
+    }
+    if (pathname === "/api/friend/events" && req.method === "GET") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: true, events: [] });
+      try { return send(res, 200, await cloud.friendEvents(session.token)); }
+      catch (err) { return cloudFailure(res, err); }
+    }
+    if (pathname === "/api/friend/events/ack" && req.method === "POST") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: true });
+      try { const body = await readBody(req); return send(res, 200, await cloud.friendEventAck(session.token, String(body.id || ""))); }
+      catch (err) { return cloudFailure(res, err); }
+    }
     if (pathname === "/api/action" && req.method === "POST") {
       const session = await authenticate(req, url);
       if (!session) return authRequired(res);
