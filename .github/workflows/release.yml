@@ -54,16 +54,16 @@ jobs:
       - name: Package portable zip
         shell: pwsh
         run: |
-          Compress-Archive -Path "dist/MomoPet-Windows-Portable/*" -DestinationPath "MomoPet-Windows-Portable-v1.7.0.1.zip" -CompressionLevel Optimal
-          Get-Item "MomoPet-Windows-Portable-v1.7.0.1.zip", "dist/MomoPet-Setup-1.7.0.1.exe" | Select-Object Name, Length
+          Compress-Archive -Path "dist/MomoPet-Windows-Portable/*" -DestinationPath "MomoPet-Windows-Portable-v1.7.0.2.zip" -CompressionLevel Optimal
+          Get-Item "MomoPet-Windows-Portable-v1.7.0.2.zip", "dist/MomoPet-Setup-1.7.0.2.exe" | Select-Object Name, Length
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-package
           path: |
-            MomoPet-Windows-Portable-v1.7.0.1.zip
-            dist/MomoPet-Setup-1.7.0.1.exe
+            MomoPet-Windows-Portable-v1.7.0.2.zip
+            dist/MomoPet-Setup-1.7.0.2.exe
           retention-days: 7
 
   release:
@@ -88,29 +88,29 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete v1.7.0.1 --yes 2>/dev/null || true
-          gh release create v1.7.0.1 android/release/MomoPet-Android-1.7.0.1.apk \
-            --title "墨墨桌宠 v1.7.0.1" \
-            --notes "1.7.0.1：修复手机好友投喂通知延迟；双人活动增加邀请中/同意/拒绝状态与主页通知；手机主页增加密友入口；好友投喂/双人出游/双人运动面板加入插画和整齐排版。" \
+          gh release delete v1.7.0.2 --yes 2>/dev/null || true
+          gh release create v1.7.0.2 android/release/MomoPet-Android-1.7.0.2.apk \
+            --title "墨墨桌宠 v1.7.0.2" \
+            --notes "1.7.0.2：修复 JSON null 导致双人活动永远 busy 的根本问题；新增独立密友页面；修复手机 Service Worker 缓存导致旧界面不更新；好友通知轮询缩短到 3 秒，主页增加密友入口；好友操作面板改用插画式排版。" \
             --verify-tag --draft
 
       - name: Upload Windows setup
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          SETUP=$(find release-assets -name 'MomoPet-Setup-1.7.0.1.exe' -print -quit)
+          SETUP=$(find release-assets -name 'MomoPet-Setup-1.7.0.2.exe' -print -quit)
           echo "setup=$SETUP"
-          gh release upload v1.7.0.1 "$SETUP" --clobber
+          gh release upload v1.7.0.2 "$SETUP" --clobber
 
       - name: Upload portable zip
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          ZIP=$(find release-assets -name 'MomoPet-Windows-Portable-v1.7.0.1.zip' -print -quit)
+          ZIP=$(find release-assets -name 'MomoPet-Windows-Portable-v1.7.0.2.zip' -print -quit)
           echo "zip=$ZIP"
-          gh release upload v1.7.0.1 "$ZIP" --clobber
+          gh release upload v1.7.0.2 "$ZIP" --clobber
 
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release edit v1.7.0.1 --draft=false
+        run: gh release edit v1.7.0.2 --draft=false

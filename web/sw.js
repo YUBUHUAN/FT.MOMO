@@ -1,9 +1,10 @@
 /* MomoPet service worker — app shell only, API is always live. */
-const CACHE = "momo-shell-v2";
+const CACHE = "momo-shell-v3";
 const ASSETS = [
   "/",
   "/index.html",
   "/profile.html",
+  "/friend.html",
   "/manifest.webmanifest",
   "/css/theme.css",
   "/css/app.css",

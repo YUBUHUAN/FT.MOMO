@@ -1257,3 +1257,15 @@ body.is-electron .pbar {
 .friend-action-visual img { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,.8); }
 .friend-art-emoji { font-size: 52px; line-height: 1; margin-left: 14px; }
 .friend-art-emoji.second { font-size: 34px; margin-left: -2px; align-self: flex-start; margin-top: 14px; }
+
+body.friend-mode .pcard:not(.friend-card) { display: none !important; }
+body.friend-mode .pcol.right { display: none !important; }
+body.friend-mode .pcol.left { width: 100%; max-width: 760px; }
+body.friend-mode .pwrap { display: flex; justify-content: center; }
+body.friend-mode .friend-card { margin-top: 0; }
+body.friend-mode .friend-card .friend-panel { gap: 14px; }
+
+.friend-art-disc { width: 64px; height: 64px; border-radius: 50%; background: #fff7ef; border: 5px solid #e3b7a4; box-shadow: inset 0 0 0 10px #f8e4d8; margin-left: 10px; }
+.friend-art-second { margin-left: -18px; transform: translateY(10px); }
+.friend-art-shuttle { width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 54px solid #f6f1e8; margin-left: 14px; filter: drop-shadow(0 2px 0 #aab5aa); }
+.friend-art-label { margin-left: 8px; font-size: 14px; color: var(--ink2); letter-spacing: .06em; }

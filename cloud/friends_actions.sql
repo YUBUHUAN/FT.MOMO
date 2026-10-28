@@ -184,8 +184,8 @@ begin
     select state into v_state from public.wowo_states where account_id = v_link.me_id;
   end if;
   if coalesce(v_state->>'sleeping', 'false') = 'true'
-     or v_state->'outing' is not null or v_state->'exercise' is not null
-     or v_state->'friendActivity' is not null then
+     or jsonb_typeof(v_state->'outing') = 'object' or jsonb_typeof(v_state->'exercise') = 'object'
+     or jsonb_typeof(v_state->'friendActivity') = 'object' then
     return jsonb_build_object('ok', false, 'error', 'busy');
   end if;
   insert into public.friend_activities
@@ -232,11 +232,11 @@ begin
     select state into v_other_state from public.momo_states where account_id = v_link.other_id;
   end if;
   if coalesce(v_state->>'sleeping', 'false') = 'true'
-     or v_state->'outing' is not null or v_state->'exercise' is not null
-     or v_state->'friendActivity' is not null
+     or jsonb_typeof(v_state->'outing') = 'object' or jsonb_typeof(v_state->'exercise') = 'object'
+     or jsonb_typeof(v_state->'friendActivity') = 'object'
      or coalesce(v_other_state->>'sleeping', 'false') = 'true'
-     or v_other_state->'outing' is not null or v_other_state->'exercise' is not null
-     or v_other_state->'friendActivity' is not null then
+     or jsonb_typeof(v_other_state->'outing') = 'object' or jsonb_typeof(v_other_state->'exercise') = 'object'
+     or jsonb_typeof(v_other_state->'friendActivity') = 'object' then
     return jsonb_build_object('ok', false, 'error', 'busy');
   end if;
 

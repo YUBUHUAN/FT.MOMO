@@ -428,7 +428,7 @@ function bindEvents() {
   [els.dockOuting, els.mOuting].forEach((b) => b && b.addEventListener("click", openOuting));
   [els.dockExercise, els.mExercise].forEach((b) => b && b.addEventListener("click", openExercise));
   [els.bgBtn, els.dockBackground].forEach((b) => b && b.addEventListener("click", openBackground));
-  $("#openFriendTop")?.addEventListener("click", () => { location.href = "/profile.html#friend"; });
+  $("#openFriendTop")?.addEventListener("click", () => { location.href = "/friend.html"; });
   [els.dockProfile, els.mProfile, els.openProfileTop].forEach(
     (b) => b && b.addEventListener("click", () => Shell.openProfile())
   );
@@ -1861,6 +1861,14 @@ init().catch((err) => {
 
 if ("serviceWorker" in navigator && (location.protocol === "https:" || ["localhost", "127.0.0.1"].includes(location.hostname))) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
+    navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" })
+      .then((reg) => reg.update())
+      .catch(() => {});
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (refreshing) return;
+      refreshing = true;
+      location.reload();
+    });
   });
 }

@@ -221,7 +221,7 @@ function render(state) {
   els.dialEmoji.textContent = mood.emoji;
   els.dialValue.textContent = Math.round(s.mood);
   els.pTag.textContent = `DAY ${String(days).padStart(2, "0")}`;
-  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.7.0.1"}`;
+  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.7.0.2"}`;
   if (els.pStorage) els.pStorage.textContent = "云端同步 · 数据保存在 Supabase";
 
   const fullness = Number(s.fullness) || 0;
@@ -374,10 +374,10 @@ function openFriendAction(kind) {
         ["羽毛球", "🏸 羽毛球"], ["跳绳", "🪢 跳绳"], ["散步", "🚶 散步"]] };
   const linkedApp = S.friend && S.friend.linked ? S.friend.linked.app : "wowo";
   const art = kind === "feed"
-    ? `<img src="${friendAvatar(linkedApp)}" alt=""><span class="friend-art-emoji">🍰</span>`
+    ? `<img src="${friendAvatar(linkedApp)}" alt=""><span class="friend-art-disc"></span><span class="friend-art-label">偷偷喂一口</span>`
     : kind === "outing"
-    ? `<img src="${friendAvatar(linkedApp)}" alt=""><span class="friend-art-emoji">🌳</span><span class="friend-art-emoji second">🌤</span>`
-    : `<img src="${friendAvatar(linkedApp)}" alt=""><span class="friend-art-emoji">🏸</span>`;
+    ? `<img src="${friendAvatar(linkedApp)}" alt=""><img class="friend-art-second" src="/assets/avatar-round.png" alt=""><span class="friend-art-label">一起出门</span>`
+    : `<img src="${friendAvatar(linkedApp)}" alt=""><span class="friend-art-shuttle"></span><span class="friend-art-label">一起动一动</span>`;
   openModal(
     `<div class="friend-action-visual ${kind}">${art}</div>
      <h3>${config.title}</h3>
