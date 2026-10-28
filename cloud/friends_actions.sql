@@ -87,6 +87,34 @@ begin
 end;
 $$;
 
+drop function if exists public.friend_active_link_v2(text) cascade;
+
+create or replace function public.friend_active_link_v2(p_token text)
+returns table (link_id uuid, me_app text, me_id uuid, me_name text,
+               other_app text, other_id uuid, other_name text)
+language plpgsql security definer set search_path = public, extensions, pg_temp
+as $$
+declare v_me record;
+begin
+  select * into v_me from public.friend_identity(p_token);
+  if not found then return; end if;
+  return query
+  select l.id as link_id,
+         v_me.app,
+         v_me.account_id,
+         v_me.username,
+         case when v_me.app = 'momo' then 'wowo' else 'momo' end,
+         case when v_me.app = 'momo' then l.wowo_account_id else l.momo_account_id end,
+         case when v_me.app = 'momo'
+              then (select w.username from public.wowo_accounts w where w.id = l.wowo_account_id)
+              else (select m.username from public.momo_accounts m where m.id = l.momo_account_id) end
+  from public.friend_links l
+  where l.status = 'active'
+    and (l.momo_account_id = v_me.account_id or l.wowo_account_id = v_me.account_id)
+  limit 1;
+end;
+$$;
+
 create or replace function public.friend_feed(p_token text, p_food_id text)
 returns jsonb
 language plpgsql security definer set search_path = public, extensions, pg_temp
@@ -94,7 +122,7 @@ as $$
 declare
   v_link record; v_food record; v_state jsonb; v_last timestamptz;
 begin
-  select * into v_link from public.friend_active_link(p_token);
+  select * into v_link from public.friend_active_link_v2(p_token);
   if v_link.link_id is null then return jsonb_build_object('ok', false, 'error', 'not_linked'); end if;
   select * into v_food from public.friend_food_catalog where id = p_food_id;
   if v_food.id is null then return jsonb_build_object('ok', false, 'error', 'bad_food'); end if;
@@ -140,7 +168,7 @@ language plpgsql security definer set search_path = public, extensions, pg_temp
 as $$
 declare v_link record; v_state jsonb; v_activity_id uuid;
 begin
-  select * into v_link from public.friend_active_link(p_token);
+  select * into v_link from public.friend_active_link_v2(p_token);
   if v_link.link_id is null then return jsonb_build_object('ok', false, 'error', 'not_linked'); end if;
   if p_kind not in ('outing', 'exercise') then return jsonb_build_object('ok', false, 'error', 'bad_kind'); end if;
   if length(btrim(coalesce(p_option, ''))) = 0 then return jsonb_build_object('ok', false, 'error', 'bad_option'); end if;
@@ -179,7 +207,7 @@ declare
   v_link record; v_act record; v_state jsonb; v_other_state jsonb;
   v_ends timestamptz;
 begin
-  select * into v_link from public.friend_active_link(p_token);
+  select * into v_link from public.friend_active_link_v2(p_token);
   if v_link.link_id is null then return jsonb_build_object('ok', false, 'error', 'not_linked'); end if;
   select * into v_act from public.friend_activities
    where id = p_id and link_id = v_link.link_id and status = 'pending' and partner_account_id = v_link.me_id;
@@ -245,7 +273,7 @@ language plpgsql security definer set search_path = public, extensions, pg_temp
 as $$
 declare v_link record; v_act record; v_state jsonb; v_other_state jsonb;
 begin
-  select * into v_link from public.friend_active_link(p_token);
+  select * into v_link from public.friend_active_link_v2(p_token);
   if v_link.link_id is null then return jsonb_build_object('ok', false, 'error', 'not_linked'); end if;
   select * into v_act from public.friend_activities
    where id = p_id and link_id = v_link.link_id
@@ -286,7 +314,7 @@ declare
   v_link record; v_act record; v_state jsonb; v_other_state jsonb;
   v_mood numeric; v_health numeric; v_fatigue numeric; v_name text;
 begin
-  select * into v_link from public.friend_active_link(p_token);
+  select * into v_link from public.friend_active_link_v2(p_token);
   if v_link.link_id is null then return jsonb_build_object('ok', true); end if;
   select * into v_act from public.friend_activities
    where link_id = v_link.link_id and status = 'active' and ends_at <= now()
@@ -367,7 +395,7 @@ as $$
 declare v_link record; v_rows jsonb;
 begin
   perform public.friend_activity_finish(p_token);
-  select * into v_link from public.friend_active_link(p_token);
+  select * into v_link from public.friend_active_link_v2(p_token);
   if v_link.link_id is null then return jsonb_build_object('ok', true, 'events', '[]'::jsonb); end if;
   select coalesce(jsonb_agg(jsonb_build_object('id', e.id, 'type', e.type, 'payload', e.payload, 'createdAt', e.created_at) order by e.created_at), '[]'::jsonb)
     into v_rows
@@ -389,13 +417,27 @@ language plpgsql security definer set search_path = public, extensions, pg_temp
 as $$
 declare v_link record;
 begin
-  select * into v_link from public.friend_active_link(p_token);
+  select * into v_link from public.friend_active_link_v2(p_token);
   if v_link.link_id is null then return jsonb_build_object('ok', false); end if;
   update public.friend_events set read_at = now()
    where id = p_id and link_id = v_link.link_id and target_account_id = v_link.me_id;
   return jsonb_build_object('ok', true);
 end;
 $$;
+
+create or replace function public.friend_debug(p_token text)
+returns jsonb language plpgsql security definer set search_path = public, extensions, pg_temp
+as $$
+declare r record;
+begin
+  select * into r from public.friend_active_link_v2(p_token);
+  return jsonb_build_object('ok', true, 'row', row_to_json(r));
+exception when others then
+  return jsonb_build_object('ok', false, 'error', SQLERRM, 'state', SQLSTATE, 'context', PG_EXCEPTION_CONTEXT);
+end;
+$$;
+
+grant execute on function public.friend_debug(text) to anon, authenticated;
 
 revoke all on function public.friend_active_link(text) from public;
 grant execute on function public.friend_activity_finish(text) to anon, authenticated;
