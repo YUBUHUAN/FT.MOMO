@@ -585,6 +585,19 @@ body.is-electron .pbar {
 }
 
 /* feed log -------------------------------------------------------------- */
+.feed-list,
+.trip-list {
+  max-height: 252px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
+
+.feed-list::-webkit-scrollbar,
+.trip-list::-webkit-scrollbar {
+  width: 4px;
+}
+
 .feed-list {
   list-style: none;
   margin: 0;

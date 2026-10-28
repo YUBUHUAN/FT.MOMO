@@ -9,7 +9,7 @@
         SnapsToDevicePixels="True">
   <Grid x:Name="Root" Background="Transparent">
     <Canvas x:Name="Stage">
-      <Border x:Name="MoodPill" Canvas.Left="12" Canvas.Top="12" Background="#D9FFFDF9"
+      <Border x:Name="MoodPill" Panel.ZIndex="30" Canvas.Left="12" Canvas.Top="12" Background="#D9FFFDF9"
               BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="14"
               Padding="10,5" Cursor="Hand" ToolTip="打开手账">
         <StackPanel Orientation="Horizontal">
@@ -19,7 +19,7 @@
         </StackPanel>
       </Border>
 
-      <StackPanel x:Name="BubbleWrap" Canvas.Left="12" Canvas.Top="52" Width="356" Visibility="Collapsed" Opacity="0">
+      <StackPanel x:Name="BubbleWrap" Panel.ZIndex="30" Canvas.Left="12" Canvas.Top="52" Width="356" Visibility="Collapsed" Opacity="0">
         <StackPanel.RenderTransform>
           <TranslateTransform x:Name="BubbleTranslate" Y="8" />
         </StackPanel.RenderTransform>
@@ -86,7 +86,7 @@
         </Image.RenderTransform>
       </Image>
 
-      <StackPanel x:Name="Dock" Canvas.Left="336" Canvas.Top="18" Width="42">
+      <StackPanel x:Name="Dock" Panel.ZIndex="30" Canvas.Left="336" Canvas.Top="18" Width="42">
         <Button x:Name="BackgroundBtn" Style="{StaticResource RoundButton}" Content="🖼" Margin="0,0,0,8"
                 ToolTip="换小屋背景" FontFamily="{StaticResource EmojiFont}" />
         <Button x:Name="FeedBtn" Style="{StaticResource RoundButton}" Content="🧋" Margin="0,0,0,8"
@@ -102,17 +102,15 @@
       <Ellipse x:Name="SyncDot" Width="8" Height="8" Canvas.Left="10" Canvas.Top="602" Fill="{StaticResource SageDeep}"
                ToolTip="已同步" />
 
+      <Border x:Name="SleepVeil" Panel.ZIndex="6" Canvas.Left="0" Canvas.Top="0" Width="380" Height="620"
+              Background="#700B0D1A" IsHitTestVisible="False" Visibility="Collapsed">
+        <TextBlock Text="💤" FontFamily="{StaticResource EmojiFont}" FontSize="30"
+                   HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,28,0" />
+      </Border>
+
     </Canvas>
 
     <Canvas x:Name="FxLayer" IsHitTestVisible="False" />
-
-    <Border x:Name="SleepVeil" Panel.ZIndex="6" Background="#700B0D1A" IsHitTestVisible="False" Visibility="Collapsed">
-      <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,24,0">
-        <TextBlock Text="💤" FontFamily="{StaticResource EmojiFont}" FontSize="30" HorizontalAlignment="Right" />
-        <TextBlock Text="她睡着了" FontFamily="{StaticResource HandFont}" FontSize="13"
-                   Foreground="#FFF6D9" HorizontalAlignment="Right" Margin="0,4,0,0" />
-      </StackPanel>
-    </Border>
 
     <Border x:Name="AwayCard" MouseLeftButtonDown="SheetHeader_MouseLeftButtonDown" Width="320" Background="{StaticResource Paper}" BorderBrush="{StaticResource Ink}"
             BorderThickness="1.5" CornerRadius="20" Padding="16" HorizontalAlignment="Center"

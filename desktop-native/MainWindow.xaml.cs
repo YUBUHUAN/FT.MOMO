@@ -721,7 +721,7 @@ public partial class MainWindow : Window
         }
         if (State != null && Bool(State, "sleeping"))
         {
-            ShowBubble("嘘……她睡着了。让她再睡一会儿吧。", 3200);
+            ShowBubble(PickLines(ContentData?["SLEEP_MURMURS"]), 3200);
             return;
         }
         DateTime now = DateTime.UtcNow;
@@ -1209,8 +1209,16 @@ public partial class MainWindow : Window
 
     /* --------------------------------------------------------------- feed */
 
+    private bool SleepingBlocked()
+    {
+        if (State == null || !Bool(State, "sleeping")) return false;
+        ShowToast("她睡着了，先点台灯叫醒她");
+        return true;
+    }
+
     private void OpenFeed()
     {
+        if (SleepingBlocked()) return;
         if (_isAway)
         {
             ShowToast("她还在外面，回来再喂吧");
@@ -1466,6 +1474,7 @@ public partial class MainWindow : Window
 
     private void OpenOuting()
     {
+        if (SleepingBlocked()) return;
         if (_isAway)
         {
             ShowToast("她已经出门啦");
@@ -1623,6 +1632,7 @@ public partial class MainWindow : Window
 
     private void OpenExercise()
     {
+        if (SleepingBlocked()) return;
         if (_isAway)
         {
             ShowToast("她还在外面，回来再运动吧");
@@ -1894,6 +1904,9 @@ public partial class MainWindow : Window
         // exercise log
         body.Children.Add(Card("运动记录", "SWEAT", BuildExerciseLog(s)));
 
+        // sleep log
+        body.Children.Add(Card("睡眠记录", "SLEEP", BuildSleepLog(s)));
+
         // feed log
         body.Children.Add(Card("最近吃了什么", "FEED", BuildFeedLog(s)));
 
@@ -1903,7 +1916,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.4.2.1.2 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.4.2.2 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }
@@ -2002,7 +2015,7 @@ public partial class MainWindow : Window
         {
             foreach (JsonNode? item in history)
             {
-                if (item == null || rows >= 5) break;
+                if (item == null || rows >= 4) break;
                 var row = new Grid { Margin = new Thickness(0, 0, 0, 8) };
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -2066,7 +2079,7 @@ public partial class MainWindow : Window
         {
             foreach (JsonNode? item in history)
             {
-                if (item == null || rows >= 5) break;
+                if (item == null || rows >= 4) break;
                 string sub = $"{RelativeTime(Str(item, "at"))} · {Num(item, "actualMinutes", Num(item, "minutes", 3)):0} 分钟"
                              + (Bool(item, "early") ? " · 提前停下" : "")
                              + $" · 健康 +{Num(item, "healthDelta"):0.#} / 疲惫 +{Num(item, "fatigueDelta"):0.#}";
@@ -2304,6 +2317,59 @@ public partial class MainWindow : Window
         ShowModal(panel);
     }
 
+    private UIElement BuildSleepLog(JsonNode s)
+    {
+        var stack = new StackPanel();
+        int rows = 0;
+        if (Bool(s, "sleeping") && !string.IsNullOrWhiteSpace(Str(s, "sleepSince")))
+        {
+            DateTime since = ParseTime(Str(s, "sleepSince"));
+            long mins = since == DateTime.MinValue ? 0 : Math.Max(1, (long)(DateTime.Now - since).TotalMinutes);
+            var row = new Grid { Margin = new Thickness(0, 0, 0, 8) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.Children.Add(new Border
+            {
+                Width = 30, Height = 30, CornerRadius = new CornerRadius(9),
+                Background = (Brush)FindResource("Paper2"),
+                Child = Txt("🌙", 15, "Ink", (FontFamily)FindResource("EmojiFont"))
+            });
+            var t = new StackPanel { Margin = new Thickness(8, 0, 0, 0) };
+            t.Children.Add(Txt("正在睡觉", 11.5, "Ink"));
+            t.Children.Add(Txt($"已经睡了 {mins} 分钟 · 点台灯可以叫醒她", 9.5, "Muted"));
+            Grid.SetColumn(t, 1);
+            row.Children.Add(t);
+            stack.Children.Add(row);
+            rows++;
+        }
+        if (s["sleepLog"] is JsonArray log)
+        {
+            foreach (JsonNode? item in log)
+            {
+                if (item == null || rows >= 4) break;
+                var row = new Grid { Margin = new Thickness(0, 0, 0, 8) };
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                row.Children.Add(new Border
+                {
+                    Width = 30, Height = 30, CornerRadius = new CornerRadius(9),
+                    Background = (Brush)FindResource("Paper2"),
+                    Child = Txt("🌙", 15, "Ink", (FontFamily)FindResource("EmojiFont"))
+                });
+                var t = new StackPanel { Margin = new Thickness(8, 0, 0, 0) };
+                t.Children.Add(Txt($"睡了 {Math.Max(1, (int)Num(item, "minutes", 1))} 分钟", 11.5, "Ink"));
+                t.Children.Add(Txt($"{RelativeTime(Str(item, "wokeAt", Str(item, "at")))} · 睡醒", 9.5, "Muted"));
+                Grid.SetColumn(t, 1);
+                row.Children.Add(t);
+                stack.Children.Add(row);
+                rows++;
+            }
+        }
+        if (rows == 0)
+            stack.Children.Add(Txt("还没有睡眠记录。\n点主页面上的台灯，哄她睡一觉。", 10.5, "Muted", null, null, 10, 8, false, TextAlignment.Center));
+        return stack;
+    }
+
     private UIElement BuildFeedLog(JsonNode s)
     {
         var stack = new StackPanel();
@@ -2315,7 +2381,7 @@ public partial class MainWindow : Window
         int count = 0;
         foreach (JsonNode? item in log)
         {
-            if (item == null || count++ >= 5) break;
+            if (item == null || count++ >= 4) break;
             var row = new Grid { Margin = new Thickness(0, 0, 0, 8) };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });

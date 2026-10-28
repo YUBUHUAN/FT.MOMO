@@ -74,6 +74,8 @@
       fatigue: START_FATIGUE,
       background: "home",
       sleeping: false,
+      sleepSince: null,
+      sleepLog: [],
       createdAt: now.toISOString(),
       lastCareAt: now.toISOString(),
       lastVitalsAt: now.toISOString(),
@@ -173,6 +175,9 @@
     if (typeof state.fatigue !== "number" || !Number.isFinite(state.fatigue)) state.fatigue = START_FATIGUE;
     if (!Array.isArray(state.exerciseHistory)) state.exerciseHistory = [];
     if (typeof state.sleeping !== "boolean") state.sleeping = false;
+    if (!Array.isArray(state.sleepLog)) state.sleepLog = [];
+    if (state.sleeping && !state.sleepSince) state.sleepSince = new Date(now).toISOString();
+    if (!state.sleeping) state.sleepSince = null;
     if (typeof state.background !== "string" || !content.SCENES.some((sc) => sc.id === state.background)) {
       state.background = "home";
     }

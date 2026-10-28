@@ -50,6 +50,7 @@ const els = {
   feedLog: $("#pFeedLog"),
   trips: $("#pTripList"),
   exercises: $("#pExerciseList"),
+  sleepLog: $("#pSleepList"),
   pTag: $("#pTag"),
   pVersion: $("#pVersion"),
   pStorage: $("#pStorage"),
@@ -199,7 +200,7 @@ function render(state) {
   els.dialEmoji.textContent = mood.emoji;
   els.dialValue.textContent = Math.round(s.mood);
   els.pTag.textContent = `DAY ${String(days).padStart(2, "0")}`;
-  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.4.2.1.2"}`;
+  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.4.2.2"}`;
   if (els.pStorage) els.pStorage.textContent = "云端同步 · 数据保存在 Supabase";
 
   const fullness = Number(s.fullness) || 0;
@@ -246,6 +247,7 @@ function render(state) {
   renderFeed(s);
   renderTrips(s);
   renderExercises(s);
+  renderSleep(s);
   renderSync();
 }
 
@@ -355,7 +357,7 @@ function openCalendar() {
 }
 
 function renderFeed(s) {
-  const items = (s.feedLog || []).slice(0, 6);
+  const items = (s.feedLog || []).slice(0, 4);
   if (!items.length) {
     els.feedLog.innerHTML = '<li class="empty">还没有喂过东西。<br>奶茶、炸串、火锅……她都在等。</li>';
     return;
@@ -390,7 +392,7 @@ function renderTrips(s) {
       <span class="t-delta">+${s.outing.moodPreview || 0}</span>
     </div>`);
   }
-  (s.outingHistory || []).slice(0, 5).forEach((t) => {
+  (s.outingHistory || []).slice(0, 4).forEach((t) => {
     rows.push(`<div class="trip">
       <span class="t-emoji">${escapeHtml(t.emoji || "🌿")}</span>
       <div class="t-main">
@@ -407,6 +409,35 @@ function renderTrips(s) {
   updateTripClock();
 }
 
+function renderSleep(s) {
+  if (!els.sleepLog) return;
+  const rows = [];
+  if (s.sleeping && s.sleepSince) {
+    const mins = Math.max(1, Math.round((Date.now() - Date.parse(s.sleepSince)) / 60000));
+    rows.push(`<div class="trip">
+      <span class="t-emoji">🌙</span>
+      <div class="t-main">
+        <div class="t-name">正在睡觉</div>
+        <div class="t-sub">已经睡了 ${mins} 分钟 · 点台灯可以叫醒她</div>
+      </div>
+      <span class="t-delta">💤</span>
+    </div>`);
+  }
+  (s.sleepLog || []).slice(0, 4).forEach((t) => {
+    rows.push(`<div class="trip">
+      <span class="t-emoji">🌙</span>
+      <div class="t-main">
+        <div class="t-name">睡了 ${Math.max(1, Number(t.minutes) || 1)} 分钟</div>
+        <div class="t-sub">${escapeHtml(relative(t.wokeAt || t.at))} · 睡醒</div>
+      </div>
+      <span class="t-delta">💤</span>
+    </div>`);
+  });
+  els.sleepLog.innerHTML = rows.length
+    ? rows.join("")
+    : '<div class="empty">还没有睡眠记录。<br>点主页面上的台灯，哄她睡一觉。</div>';
+}
+
 function renderExercises(s) {
   const rows = [];
   if (s.exercise) {
@@ -420,7 +451,7 @@ function renderExercises(s) {
       <span class="t-delta">+${s.exercise.healthPreview || 0}</span>
     </div>`);
   }
-  (s.exerciseHistory || []).slice(0, 5).forEach((t) => {
+  (s.exerciseHistory || []).slice(0, 4).forEach((t) => {
     rows.push(`<div class="trip">
       <span class="t-emoji">${escapeHtml(t.emoji || "🏃")}</span>
       <div class="t-main">

@@ -55,9 +55,28 @@
           result = { ok: false, error: "busy" };
           break;
         }
-        state.sleeping = !!a.sleeping;
+        const next = !!a.sleeping;
+        if (next !== state.sleeping) {
+          if (next) {
+            state.sleeping = true;
+            state.sleepSince = new Date(now).toISOString();
+          } else {
+            const start = Date.parse(state.sleepSince || state.lastInteractionAt || now);
+            const minutes = Math.max(1, Math.round((now - start) / 60000));
+            if (!Array.isArray(state.sleepLog)) state.sleepLog = [];
+            state.sleepLog.unshift({
+              at: new Date(now).toISOString(),
+              sleptAt: new Date(start).toISOString(),
+              wokeAt: new Date(now).toISOString(),
+              minutes
+            });
+            state.sleepLog = state.sleepLog.slice(0, 12);
+            state.sleeping = false;
+            state.sleepSince = null;
+          }
+          state.rev = (state.rev || 0) + 1;
+        }
         state.lastInteractionAt = new Date(now).toISOString();
-        state.rev = (state.rev || 0) + 1;
         result = { ok: true, sleeping: state.sleeping };
         break;
       }
