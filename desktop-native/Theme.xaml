@@ -373,4 +373,36 @@
     </Setter>
   </Style>
 
+
+  <!-- Always-visible scrollbar for the notebook sheets. -->
+  <Style x:Key="MomoScrollBar" TargetType="ScrollBar">
+    <Setter Property="Width" Value="10" />
+    <Setter Property="MinWidth" Value="10" />
+    <Setter Property="Background" Value="{StaticResource Paper3}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ScrollBar">
+          <Border Background="{TemplateBinding Background}" CornerRadius="5" Width="{TemplateBinding Width}">
+            <Track x:Name="PART_Track" Orientation="Vertical" IsDirectionReversed="True">
+              <Track.DecreaseRepeatButton>
+                <RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0" />
+              </Track.DecreaseRepeatButton>
+              <Track.Thumb>
+                <Thumb MinHeight="28">
+                  <Thumb.Template>
+                    <ControlTemplate TargetType="Thumb">
+                      <Border Background="{StaticResource Ink2}" CornerRadius="4" Margin="2" />
+                    </ControlTemplate>
+                  </Thumb.Template>
+                </Thumb>
+              </Track.Thumb>
+              <Track.IncreaseRepeatButton>
+                <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0" />
+              </Track.IncreaseRepeatButton>
+            </Track>
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
 </ResourceDictionary>

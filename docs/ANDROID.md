@@ -4,7 +4,7 @@
 
 ## APK
 
-- 文件：`dist/MomoPet-Android-1.4.2.2.apk`
+- 文件：`dist/MomoPet-Android-1.4.2.3.apk`
 - 包名：`com.momopet.app`
 - 最低 Android 7（API 24）
 - 首次安装需要允许“安装未知应用”
