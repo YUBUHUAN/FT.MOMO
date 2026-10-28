@@ -168,6 +168,7 @@ language plpgsql security definer set search_path = public, extensions, pg_temp
 as $$
 declare v_link record; v_state jsonb; v_activity_id uuid;
 begin
+  perform public.friend_activity_finish(p_token);
   select * into v_link from public.friend_active_link_v2(p_token);
   if v_link.link_id is null then return jsonb_build_object('ok', false, 'error', 'not_linked'); end if;
   if p_kind not in ('outing', 'exercise') then return jsonb_build_object('ok', false, 'error', 'bad_kind'); end if;

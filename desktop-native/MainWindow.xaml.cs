@@ -1899,10 +1899,10 @@ public partial class MainWindow : Window
     private void FriendAction(string kind)
     {
         var options = kind == "feed"
-            ? new[] { ("cookie", "🍪 小饼干"), ("milk", "🥛 热牛奶"), ("cake", "🍰 草莓蛋糕"), ("oden", "🍢 关东煮") }
+            ? new[] { ("cookie", "小饼干"), ("milk", "热牛奶"), ("cake", "草莓蛋糕"), ("oden", "关东煮") }
             : kind == "outing"
-            ? new[] { ("公园", "🌳 公园"), ("海边", "🌊 海边"), ("游乐场", "🎡 游乐场") }
-            : new[] { ("羽毛球", "🏸 羽毛球"), ("跳绳", "🪢 跳绳"), ("散步", "🚶 散步") };
+            ? new[] { ("公园", "公园"), ("海边", "海边"), ("游乐场", "游乐场") }
+            : new[] { ("羽毛球", "羽毛球"), ("跳绳", "跳绳"), ("散步", "散步") };
         var panel = new StackPanel { Width = 280 };
         panel.Children.Add(Txt(kind == "feed" ? "喂一口" : kind == "outing" ? "双人出游" : "双人运动", 17, "Ink", (FontFamily)FindResource("HandFont"), null, 0, 4));
         panel.Children.Add(Txt(kind == "feed" ? "对方上线后会看到，并记进手帐。" : "固定 30 分钟，对方同意后开始。", 10.5, "Muted", null, null, 0, 10, true));
@@ -2064,6 +2064,20 @@ public partial class MainWindow : Window
                 actions.Children.Add(action);
             }
             body.Children.Add(actions);
+            var active = events?["activity"];
+            if (active != null && Str(active, "status") == "active")
+            {
+                var arow = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
+                arow.Children.Add(Txt($"正在和【{Str(linked, "name", "密友")}】{(Str(active, "kind") == "exercise" ? "双人运动" : "双人出游")}（{Str(active, "option")}）", 10.5, "Ink2", null, null, 0, 0, true));
+                var end = new Button { Content = "提前结束", Style = (Style)FindResource("SmallButton"), Margin = new Thickness(8, 0, 0, 0) };
+                end.Click += async (_, _) =>
+                {
+                    try { await _api.FriendActivityCancelAsync(Str(active, "id")); ShowToast("已结束"); OpenFriend(); }
+                    catch { ShowToast("操作失败"); }
+                };
+                arow.Children.Add(end);
+                body.Children.Add(arow);
+            }
             var unbind = new Button { Content = "解除绑定", Style = (Style)FindResource("SmallButton"), HorizontalAlignment = System.Windows.HorizontalAlignment.Left };
             unbind.Click += async (_, _) =>
             {
@@ -2253,7 +2267,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.7.0.3 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.7.0.4 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }

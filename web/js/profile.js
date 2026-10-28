@@ -221,7 +221,7 @@ function render(state) {
   els.dialEmoji.textContent = mood.emoji;
   els.dialValue.textContent = Math.round(s.mood);
   els.pTag.textContent = `DAY ${String(days).padStart(2, "0")}`;
-  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.7.0.3"}`;
+  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.7.0.4"}`;
   if (els.pStorage) els.pStorage.textContent = "云端同步 · 数据保存在 Supabase";
 
   const fullness = Number(s.fullness) || 0;
@@ -323,6 +323,22 @@ function renderFriend() {
       els.friendLinked.querySelectorAll("[data-friend-action]").forEach((btn) => {
         btn.addEventListener("click", () => openFriendAction(btn.dataset.friendAction));
       });
+    }
+    if (S.friendActivity && S.friendActivity.status === "active") {
+      const a = S.friendActivity;
+      const friendName = S.friend && S.friend.linked ? S.friend.linked.name : "密友";
+      const left = Math.max(0, Math.ceil((Date.parse(a.endsAt) - Date.now()) / 60000));
+      const box = document.createElement("div");
+      box.className = "friend-pending-box friend-active-box";
+      box.innerHTML = `<span>正在和【${escapeHtml(friendName)}】${a.kind === "exercise" ? "双人运动" : "双人出游"}（${escapeHtml(a.option || "")}）· 还剩 ${left} 分钟</span>`;
+      const end = document.createElement("button");
+      end.type = "button"; end.textContent = "提前结束";
+      end.addEventListener("click", async () => {
+        try { await S.api.friendActivityCancel(a.id); toast("已结束"); await refreshFriend(); }
+        catch (_) { toast("操作失败"); }
+      });
+      box.appendChild(end);
+      els.friendLinked.appendChild(box);
     }
     if (S.friendActivity && S.friendActivity.status === "pending") {
       const a = S.friendActivity;
