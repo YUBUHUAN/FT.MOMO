@@ -59,6 +59,8 @@ revoke all on table public.friend_events from anon, authenticated;
 revoke all on table public.friend_activities from anon, authenticated;
 revoke all on table public.friend_food_catalog from anon, authenticated;
 
+drop function if exists public.friend_active_link(text) cascade;
+
 create or replace function public.friend_active_link(p_token text)
 returns table (link_id uuid, me_app text, me_id uuid, me_name text,
                other_app text, other_id uuid, other_name text)
@@ -76,8 +78,8 @@ begin
          case when v_me.app = 'momo' then 'wowo' else 'momo' end,
          case when v_me.app = 'momo' then l.wowo_account_id else l.momo_account_id end,
          case when v_me.app = 'momo'
-              then (select username from public.wowo_accounts where id = l.wowo_account_id)
-              else (select username from public.momo_accounts where id = l.momo_account_id) end
+              then (select w.username from public.wowo_accounts w where w.id = l.wowo_account_id)
+              else (select m.username from public.momo_accounts m where m.id = l.momo_account_id) end
   from public.friend_links l
   where l.status = 'active'
     and (l.momo_account_id = v_me.account_id or l.wowo_account_id = v_me.account_id)
