@@ -406,7 +406,8 @@ begin
     (select jsonb_build_object('id', a.id, 'kind', a.kind, 'option', a.option,
        'status', a.status, 'endsAt', a.ends_at, 'from', case when a.initiator_app = v_link.me_app then 'me' else 'friend' end)
      from public.friend_activities a
-     where a.link_id = v_link.link_id and a.status in ('pending', 'active')
+     where (a.initiator_account_id = v_link.me_id or a.partner_account_id = v_link.me_id)
+       and a.status in ('pending', 'active')
      order by a.created_at desc limit 1));
 end;
 $$;
