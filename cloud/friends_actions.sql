@@ -60,7 +60,7 @@ revoke all on table public.friend_activities from anon, authenticated;
 revoke all on table public.friend_food_catalog from anon, authenticated;
 
 create or replace function public.friend_active_link(p_token text)
-returns table (id uuid, me_app text, me_id uuid, me_name text,
+returns table (link_id uuid, me_app text, me_id uuid, me_name text,
                other_app text, other_id uuid, other_name text)
 language plpgsql security definer set search_path = public, extensions, pg_temp
 as $$
@@ -69,7 +69,7 @@ begin
   select * into v_me from public.friend_identity(p_token);
   if not found then return; end if;
   return query
-  select l.id,
+  select l.id as link_id,
          v_me.app,
          v_me.account_id,
          v_me.username,
@@ -93,12 +93,12 @@ declare
   v_link record; v_food record; v_state jsonb; v_last timestamptz;
 begin
   select * into v_link from public.friend_active_link(p_token);
-  if v_link.id is null then return jsonb_build_object('ok', false, 'error', 'not_linked'); end if;
+  if v_link.link_id is null then return jsonb_build_object('ok', false, 'error', 'not_linked'); end if;
   select * into v_food from public.friend_food_catalog where id = p_food_id;
   if v_food.id is null then return jsonb_build_object('ok', false, 'error', 'bad_food'); end if;
 
   select max(created_at) into v_last from public.friend_events
-   where link_id = v_link.id and type = 'feed' and target_app = v_link.other_app
+   where link_id = v_link.link_id and type = 'feed' and target_app = v_link.other_app
      and target_account_id = v_link.other_id;
   if v_last is not null and v_last > now() - interval '2 hours' then
     return jsonb_build_object('ok', false, 'error', 'cooldown');
@@ -126,7 +126,7 @@ begin
   end if;
 
   insert into public.friend_events (link_id, target_app, target_account_id, type, payload)
-  values (v_link.id, v_link.other_app, v_link.other_id, 'feed',
+  values (v_link.link_id, v_link.other_app, v_link.other_id, 'feed',
     jsonb_build_object('from', v_link.me_name, 'food', v_food.name, 'emoji', v_food.emoji));
   return jsonb_build_object('ok', true, 'food', v_food.name);
 end;
@@ -139,13 +139,13 @@ as $$
 declare v_link record; v_state jsonb; v_activity_id uuid;
 begin
   select * into v_link from public.friend_active_link(p_token);
-  if v_link.id is null then return jsonb_build_object('ok', false, 'error', 'not_linked'); end if;
+  if v_link.link_id is null then return jsonb_build_object('ok', false, 'error', 'not_linked'); end if;
   if p_kind not in ('outing', 'exercise') then return jsonb_build_object('ok', false, 'error', 'bad_kind'); end if;
   if length(btrim(coalesce(p_option, ''))) = 0 then return jsonb_build_object('ok', false, 'error', 'bad_option'); end if;
-  if exists (select 1 from public.friend_activities where link_id = v_link.id and status = 'pending' and initiator_account_id = v_link.me_id) then
+  if exists (select 1 from public.friend_activities where link_id = v_link.link_id and status = 'pending' and initiator_account_id = v_link.me_id) then
     return jsonb_build_object('ok', false, 'error', 'pending_exists');
   end if;
-  if exists (select 1 from public.friend_activities where link_id = v_link.id and status = 'active') then
+  if exists (select 1 from public.friend_activities where link_id = v_link.link_id and status = 'active') then
     return jsonb_build_object('ok', false, 'error', 'active_exists');
   end if;
   if v_link.me_app = 'momo' then
@@ -160,10 +160,10 @@ begin
   end if;
   insert into public.friend_activities
     (link_id, kind, option, initiator_app, initiator_account_id, partner_app, partner_account_id)
-  values (v_link.id, p_kind, btrim(p_option), v_link.me_app, v_link.me_id, v_link.other_app, v_link.other_id)
+  values (v_link.link_id, p_kind, btrim(p_option), v_link.me_app, v_link.me_id, v_link.other_app, v_link.other_id)
   returning id into v_activity_id;
   insert into public.friend_events (link_id, target_app, target_account_id, type, payload)
-  values (v_link.id, v_link.other_app, v_link.other_id, 'activity_invite',
+  values (v_link.link_id, v_link.other_app, v_link.other_id, 'activity_invite',
     jsonb_build_object('id', v_activity_id, 'kind', p_kind, 'option', btrim(p_option), 'from', v_link.me_name));
   return jsonb_build_object('ok', true, 'status', 'pending');
 end;
@@ -178,9 +178,9 @@ declare
   v_ends timestamptz;
 begin
   select * into v_link from public.friend_active_link(p_token);
-  if v_link.id is null then return jsonb_build_object('ok', false, 'error', 'not_linked'); end if;
+  if v_link.link_id is null then return jsonb_build_object('ok', false, 'error', 'not_linked'); end if;
   select * into v_act from public.friend_activities
-   where id = p_id and link_id = v_link.id and status = 'pending' and partner_account_id = v_link.me_id;
+   where id = p_id and link_id = v_link.link_id and status = 'pending' and partner_account_id = v_link.me_id;
   if v_act.id is null then return jsonb_build_object('ok', false, 'error', 'not_found'); end if;
   if v_act.created_at < now() - interval '30 minutes' then
     update public.friend_activities set status = 'expired' where id = v_act.id;
@@ -189,7 +189,7 @@ begin
   if not p_accept then
     update public.friend_activities set status = 'declined', responded_at = now() where id = v_act.id;
     insert into public.friend_events (link_id, target_app, target_account_id, type, payload)
-    values (v_link.id, v_act.initiator_app, v_act.initiator_account_id, 'activity_declined',
+    values (v_link.link_id, v_act.initiator_app, v_act.initiator_account_id, 'activity_declined',
       jsonb_build_object('kind', v_act.kind, 'from', v_link.me_name));
     return jsonb_build_object('ok', true, 'status', 'declined');
   end if;
@@ -231,7 +231,7 @@ begin
   end if;
   update public.friend_activities set status = 'active', responded_at = now(), ends_at = v_ends where id = v_act.id;
   insert into public.friend_events (link_id, target_app, target_account_id, type, payload)
-  values (v_link.id, v_link.other_app, v_link.other_id, 'activity_started',
+  values (v_link.link_id, v_link.other_app, v_link.other_id, 'activity_started',
     jsonb_build_object('kind', v_act.kind, 'option', v_act.option, 'from', v_link.me_name));
   return jsonb_build_object('ok', true, 'status', 'active');
 end;
@@ -244,9 +244,9 @@ as $$
 declare v_link record; v_act record; v_state jsonb; v_other_state jsonb;
 begin
   select * into v_link from public.friend_active_link(p_token);
-  if v_link.id is null then return jsonb_build_object('ok', false, 'error', 'not_linked'); end if;
+  if v_link.link_id is null then return jsonb_build_object('ok', false, 'error', 'not_linked'); end if;
   select * into v_act from public.friend_activities
-   where id = p_id and link_id = v_link.id
+   where id = p_id and link_id = v_link.link_id
      and (initiator_account_id = v_link.me_id or partner_account_id = v_link.me_id)
      and status in ('pending', 'active');
   if v_act.id is null then return jsonb_build_object('ok', false, 'error', 'not_found'); end if;
@@ -270,7 +270,7 @@ begin
     end if;
   end if;
   insert into public.friend_events (link_id, target_app, target_account_id, type, payload)
-  values (v_link.id, v_act.partner_app, v_act.partner_account_id, 'activity_cancelled',
+  values (v_link.link_id, v_act.partner_app, v_act.partner_account_id, 'activity_cancelled',
     jsonb_build_object('kind', v_act.kind, 'from', v_link.me_name));
   return jsonb_build_object('ok', true);
 end;
@@ -285,9 +285,9 @@ declare
   v_mood numeric; v_health numeric; v_fatigue numeric; v_name text;
 begin
   select * into v_link from public.friend_active_link(p_token);
-  if v_link.id is null then return jsonb_build_object('ok', true); end if;
+  if v_link.link_id is null then return jsonb_build_object('ok', true); end if;
   select * into v_act from public.friend_activities
-   where link_id = v_link.id and status = 'active' and ends_at <= now()
+   where link_id = v_link.link_id and status = 'active' and ends_at <= now()
    order by created_at limit 1;
   if v_act.id is null then return jsonb_build_object('ok', true); end if;
 
@@ -352,7 +352,7 @@ begin
   end if;
   update public.friend_activities set status = 'completed', result = jsonb_build_object('mood', v_mood, 'health', v_health, 'fatigue', v_fatigue) where id = v_act.id;
   insert into public.friend_events (link_id, target_app, target_account_id, type, payload)
-  values (v_link.id, v_link.other_app, v_link.other_id, 'activity_finished',
+  values (v_link.link_id, v_link.other_app, v_link.other_id, 'activity_finished',
     jsonb_build_object('kind', v_act.kind, 'option', v_act.option, 'from', '你'));
   return jsonb_build_object('ok', true, 'finished', v_act.kind);
 end;
@@ -366,17 +366,17 @@ declare v_link record; v_rows jsonb;
 begin
   perform public.friend_activity_finish(p_token);
   select * into v_link from public.friend_active_link(p_token);
-  if v_link.id is null then return jsonb_build_object('ok', true, 'events', '[]'::jsonb); end if;
+  if v_link.link_id is null then return jsonb_build_object('ok', true, 'events', '[]'::jsonb); end if;
   select coalesce(jsonb_agg(jsonb_build_object('id', e.id, 'type', e.type, 'payload', e.payload, 'createdAt', e.created_at) order by e.created_at), '[]'::jsonb)
     into v_rows
     from public.friend_events e
-    where e.link_id = v_link.id and e.target_app = v_link.me_app
+    where e.link_id = v_link.link_id and e.target_app = v_link.me_app
       and e.target_account_id = v_link.me_id and e.read_at is null;
   return jsonb_build_object('ok', true, 'events', v_rows, 'activity',
     (select jsonb_build_object('id', a.id, 'kind', a.kind, 'option', a.option,
        'status', a.status, 'endsAt', a.ends_at, 'from', case when a.initiator_app = v_link.me_app then 'me' else 'friend' end)
      from public.friend_activities a
-     where a.link_id = v_link.id and a.status in ('pending', 'active')
+     where a.link_id = v_link.link_id and a.status in ('pending', 'active')
      order by a.created_at desc limit 1));
 end;
 $$;
@@ -388,9 +388,9 @@ as $$
 declare v_link record;
 begin
   select * into v_link from public.friend_active_link(p_token);
-  if v_link.id is null then return jsonb_build_object('ok', false); end if;
+  if v_link.link_id is null then return jsonb_build_object('ok', false); end if;
   update public.friend_events set read_at = now()
-   where id = p_id and link_id = v_link.id and target_account_id = v_link.me_id;
+   where id = p_id and link_id = v_link.link_id and target_account_id = v_link.me_id;
   return jsonb_build_object('ok', true);
 end;
 $$;
