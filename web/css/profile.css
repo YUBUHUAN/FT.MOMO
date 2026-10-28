@@ -1246,3 +1246,14 @@ body.is-electron .pbar {
 .friend-actions button, .friend-choice button { border: 1px solid var(--line-strong); background: transparent; color: var(--ink2); border-radius: 10px; padding: 7px 10px; font-size: 10.5px; cursor: pointer; }
 .friend-choice { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
 .friend-choice button { background: var(--paper2); font-size: 12px; padding: 10px 12px; }
+
+.friend-pending-box { display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-top:8px; padding:8px 10px; border-radius:12px; background:var(--paper3); font-size:10.5px; color:var(--ink2); }
+.friend-pending-box button { border:1px solid var(--line-strong); background:transparent; border-radius:999px; padding:4px 8px; font-size:10px; cursor:pointer; }
+.friend-pending-box button.primary { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+
+.friend-action-visual { position: relative; height: 112px; border-radius: 16px; margin-bottom: 12px; overflow: hidden; display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: linear-gradient(135deg, #fdf0e7, #f4d9d4); }
+.friend-action-visual.outing { background: linear-gradient(135deg, #dcecf3, #e9efd9); }
+.friend-action-visual.exercise { background: linear-gradient(135deg, #e4efdf, #dbe8f2); }
+.friend-action-visual img { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,.8); }
+.friend-art-emoji { font-size: 52px; line-height: 1; margin-left: 14px; }
+.friend-art-emoji.second { font-size: 34px; margin-left: -2px; align-self: flex-start; margin-top: 14px; }

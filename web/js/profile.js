@@ -14,7 +14,8 @@ const S = {
   bootstrap: null,
   offline: false,
   weekOffset: 0,
-  friend: null
+  friend: null,
+  friendActivity: null
 };
 
 const els = {
@@ -103,6 +104,8 @@ async function init() {
     }
     renderSync();
     refreshFriend();
+    if (location.hash === "#friend") setTimeout(() => document.getElementById("friendCard")?.scrollIntoView({ behavior: "smooth", block: "start" }), 350);
+    setInterval(() => { if (!document.hidden) refreshFriend(); }, 3000);
   } catch (err) {
     if (err && err.needsAuth) {
       location.replace("/");
@@ -218,7 +221,7 @@ function render(state) {
   els.dialEmoji.textContent = mood.emoji;
   els.dialValue.textContent = Math.round(s.mood);
   els.pTag.textContent = `DAY ${String(days).padStart(2, "0")}`;
-  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.7.0"}`;
+  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.7.0.1"}`;
   if (els.pStorage) els.pStorage.textContent = "云端同步 · 数据保存在 Supabase";
 
   const fullness = Number(s.fullness) || 0;
@@ -280,9 +283,13 @@ function friendAvatar(app) {
 async function refreshFriend() {
   if (!S.api || S.api.offline) return;
   try {
-    const [code, status] = await Promise.all([S.api.friendCode(), S.api.friendStatus()]);
+    const [code, status, events] = await Promise.all([
+      S.api.friendCode(), S.api.friendStatus(), S.api.friendEvents().catch(() => null)
+    ]);
     if (!code || code.ok === false) return;
     S.friend = status || null;
+    S.friendActivity = events && events.activity ? events.activity : null;
+    S.friendEvents = events && events.events ? events.events : [];
     if (els.friendCode) els.friendCode.textContent = code.code || "------";
     renderFriend();
   } catch (_) {
@@ -317,6 +324,35 @@ function renderFriend() {
         btn.addEventListener("click", () => openFriendAction(btn.dataset.friendAction));
       });
     }
+    if (S.friendActivity && S.friendActivity.status === "pending") {
+      const a = S.friendActivity;
+      const mine = a.from === "me";
+      const box = document.createElement("div");
+      box.className = "friend-pending-box";
+      box.innerHTML = `<span>${mine ? "已发出" : "收到"}${a.kind === "exercise" ? "双人运动" : "双人出游"}邀请（${escapeHtml(a.option || "")}）${mine ? "，等待回复" : ""}</span>`;
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.textContent = mine ? "取消申请" : "拒绝";
+      cancel.addEventListener("click", async () => {
+        try {
+          if (mine) await S.api.friendActivityCancel(a.id);
+          else await S.api.friendActivityRespond(a.id, false);
+          toast(mine ? "已取消" : "已拒绝");
+          await refreshFriend();
+        } catch (_) { toast("操作失败"); }
+      });
+      box.appendChild(cancel);
+      if (!mine) {
+        const ok = document.createElement("button");
+        ok.type = "button"; ok.className = "primary"; ok.textContent = "同意";
+        ok.addEventListener("click", async () => {
+          try { await S.api.friendActivityRespond(a.id, true); toast("好，一起出发。"); await refreshFriend(); }
+          catch (err) { toast(err.message === "busy" ? "现在没空" : "接受失败"); }
+        });
+        box.appendChild(ok);
+      }
+      els.friendLinked.appendChild(box);
+    }
     els.friendHint.textContent = "已经绑定。双方都发送过申请后，好友关系才成立。";
     return;
   }
@@ -336,8 +372,15 @@ function openFriendAction(kind) {
         ["公园", "🌳 公园"], ["海边", "🌊 海边"], ["游乐场", "🎡 游乐场"]] }
     : { title: "双人运动", hint: "发起后等对方同意，固定 30 分钟。", options: [
         ["羽毛球", "🏸 羽毛球"], ["跳绳", "🪢 跳绳"], ["散步", "🚶 散步"]] };
+  const linkedApp = S.friend && S.friend.linked ? S.friend.linked.app : "wowo";
+  const art = kind === "feed"
+    ? `<img src="${friendAvatar(linkedApp)}" alt=""><span class="friend-art-emoji">🍰</span>`
+    : kind === "outing"
+    ? `<img src="${friendAvatar(linkedApp)}" alt=""><span class="friend-art-emoji">🌳</span><span class="friend-art-emoji second">🌤</span>`
+    : `<img src="${friendAvatar(linkedApp)}" alt=""><span class="friend-art-emoji">🏸</span>`;
   openModal(
-    `<h3>${config.title}</h3>
+    `<div class="friend-action-visual ${kind}">${art}</div>
+     <h3>${config.title}</h3>
      <p>${config.hint}</p>
      <div class="friend-choice">
        ${config.options.map(([value, label]) => `<button type="button" data-value="${escapeHtml(value)}">${label}</button>`).join("")}

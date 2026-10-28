@@ -38,6 +38,7 @@
           <span class="emoji" id="topMoodEmoji">🍃</span>
           <b id="topMoodValue">64</b>
         </span>
+        <button class="icon-btn friend-top-btn" id="openFriendTop" aria-label="密友" title="密友">🤝<span class="friend-badge hidden" id="friendBadge"></span></button>
         <button class="icon-btn" id="bgBtn" aria-label="换小屋背景" title="换小屋背景">🎨</button>
         <button class="icon-btn" id="openProfileTop" aria-label="打开个人页面" title="个人页面">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -72,11 +73,6 @@
       <div class="bubble" id="bubble" aria-live="polite">
         <div class="bubble-text" id="bubbleText"></div>
         <div class="bubble-mark" id="bubbleMark"></div>
-      </div>
-
-      <div class="friend-strip hidden" id="friendStrip" role="status" aria-live="polite">
-        <div class="friend-strip-text" id="friendStripText"></div>
-        <div class="friend-strip-actions" id="friendStripActions"></div>
       </div>
 
       <div class="mood-toast" id="moodToast"></div>
@@ -162,6 +158,11 @@
       </button>
     </nav>
   </div>
+
+      <div class="friend-strip hidden" id="friendStrip" role="status" aria-live="polite">
+        <div class="friend-strip-text" id="friendStripText"></div>
+        <div class="friend-strip-actions" id="friendStripActions"></div>
+      </div>
 
   <section class="pair-screen hidden" id="authScreen" aria-label="登录">
     <div class="pair-card auth-card">

@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.momopet.app"
     android:versionCode="14"
-    android:versionName="1.7.0">
+    android:versionName="1.7.0.1">
 
     <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="35" />
     <uses-permission android:name="android.permission.INTERNET" />

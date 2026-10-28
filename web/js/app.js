@@ -281,6 +281,13 @@ async function checkFriendEvents() {
       }
     }
 
+    const badge = document.getElementById("friendBadge");
+    if (badge) {
+      const count = Number((S.friendInvite ? 1 : 0) + (events.filter(e => e.type === "activity_invite").length));
+      badge.textContent = count > 0 ? String(count) : "";
+      badge.classList.toggle("hidden", count === 0);
+    }
+
     const act = out.activity;
     const current = S.state.friendActivity;
     if (current && current.endsAt > Date.now()) {
@@ -301,7 +308,10 @@ async function checkFriendEvents() {
 function startFriendWatch() {
   if (S.friendPoll) clearInterval(S.friendPoll);
   checkFriendEvents();
-  S.friendPoll = setInterval(checkFriendEvents, 8000);
+  S.friendPoll = setInterval(checkFriendEvents, 3000);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) checkFriendEvents();
+  });
 }
 
 function finishBoot() {
@@ -418,6 +428,7 @@ function bindEvents() {
   [els.dockOuting, els.mOuting].forEach((b) => b && b.addEventListener("click", openOuting));
   [els.dockExercise, els.mExercise].forEach((b) => b && b.addEventListener("click", openExercise));
   [els.bgBtn, els.dockBackground].forEach((b) => b && b.addEventListener("click", openBackground));
+  $("#openFriendTop")?.addEventListener("click", () => { location.href = "/profile.html#friend"; });
   [els.dockProfile, els.mProfile, els.openProfileTop].forEach(
     (b) => b && b.addEventListener("click", () => Shell.openProfile())
   );

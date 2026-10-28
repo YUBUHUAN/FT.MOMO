@@ -2034,3 +2034,7 @@ body[data-scene="garden"] {
   transform: none;
   width: 300px;
 }
+
+.friend-top-btn { position: relative; }
+.friend-badge { position: absolute; top: -4px; right: -4px; min-width: 14px; height: 14px; padding: 0 4px; border-radius: 999px; background: var(--blush-deep, #e59aa4); color: #fff; font-size: 9px; line-height: 14px; text-align: center; }
+.friend-badge.hidden { display: none; }
