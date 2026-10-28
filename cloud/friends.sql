@@ -3,7 +3,7 @@
 -- wowo_sessions / wowo_states exist (cloud/schema.sql from the Wowo repo).
 begin;
 
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
 
 alter table public.momo_accounts add column if not exists friend_code text;
 alter table public.wowo_accounts add column if not exists friend_code text;
@@ -53,7 +53,7 @@ create or replace function public.friend_identity(p_token text)
 returns table (app text, account_id uuid, username text, friend_code text)
 language sql
 security definer
-set search_path = public
+set search_path = public, extensions, pg_temp
 as $$
   select 'momo'::text, s.account_id, a.username, a.friend_code
   from public.momo_sessions s
@@ -73,7 +73,7 @@ create or replace function public.friend_new_code(p_prefix text)
 returns text
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions, pg_temp
 as $$
 declare
   v_code text;
@@ -91,7 +91,7 @@ create or replace function public.friend_code_for(p_token text)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions, pg_temp
 as $$
 declare
   v_me record;
@@ -120,7 +120,7 @@ create or replace function public.friend_pending(p_token text)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions, pg_temp
 as $$
 declare
   v_me record;
@@ -142,7 +142,7 @@ create or replace function public.friend_request(p_token text, p_code text)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions, pg_temp
 as $$
 declare
   v_me record;
@@ -233,7 +233,7 @@ create or replace function public.friend_status(p_token text)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions, pg_temp
 as $$
 declare
   v_me record;
@@ -309,7 +309,7 @@ create or replace function public.friend_unbind(p_token text)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions, pg_temp
 as $$
 declare
   v_me record;
