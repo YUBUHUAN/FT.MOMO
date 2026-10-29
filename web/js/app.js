@@ -83,6 +83,7 @@ const els = {
   awayCard: $("#awayCard"),
   awayScene: $("#awayScene"),
   awayEmoji: $("#awayEmoji"),
+  awayKicker: $("#awayKicker"),
   awayTitle: $("#awayTitle"),
   awayCount: $("#awayCount"),
   awayNote: $("#awayNote"),
@@ -298,7 +299,9 @@ async function checkFriendEvents() {
     const act = out.activity;
     const previousActivity = S.state.friendActivity;
     if (act && (act.status === "active" || act.status === "pending")) {
-      S.state.friendActivity = act;
+      S.state.friendActivity = previousActivity && previousActivity.id === act.id
+        ? Object.assign({}, previousActivity, act)
+        : act;
     } else if (previousActivity) {
       S.state.friendActivity = null;
     }
@@ -735,6 +738,7 @@ function renderAway() {
   if (!s || (!s.outing && !fa)) {
     els.awayCard.classList.add("hidden");
     document.body.classList.remove("is-away");
+    document.body.classList.remove("friend-busy");
     clearInterval(S.awayTimer);
     S.awayTimer = null;
     S.awayFinishing = false;
@@ -745,12 +749,23 @@ function renderAway() {
   S.bubble.hide();
   if (fa) {
     const exercise = fa.kind === "exercise";
+    const partner = fa.partner || "TA";
+    els.awayKicker.textContent = exercise ? "动起来，别偷懒" : "走，一起溜达去";
     els.awayEmoji.textContent = exercise ? "🏸" : "🌳";
-    els.awayTitle.textContent = `和【${fa.partner || "密友"}】${exercise ? "一起运动" : "一起出游"}`;
-    els.awayNote.textContent = `${fa.option || ""} · 固定 30 分钟，回来时会带一张合照。`;
+    els.awayTitle.textContent = `和【${partner}】${exercise ? "一起动一动" : "出门啦"}`;
+    els.awayNote.textContent = exercise
+      ? `${fa.option || "运动"}已经准备好了，回来会带一张合照。`
+      : "不用赶时间，回来会带一张合照。";
+    els.awayEarly.textContent = "提前结束";
+    els.awayPeek.textContent = "看看 TA";
     els.awayScene.className = "away-scene scene-park";
     els.awayScene.dataset.place = "park";
+    document.body.classList.add("friend-busy");
   } else {
+    els.awayKicker.textContent = "她出门了";
+    els.awayEarly.textContent = "提前回来";
+    els.awayPeek.textContent = "看看她";
+    document.body.classList.remove("friend-busy");
     const outing = s.outing;
     els.awayEmoji.textContent = outing.emoji || "🌳";
     els.awayTitle.textContent = `去${outing.name}走走`;
@@ -796,7 +811,11 @@ function peekAway() {
   if (!S.state) return;
   if (friendActivity()) {
     const fa = friendActivity();
-    S.bubble.show(`【${fa.partner || "密友"}】在${fa.option || "那边"}等你。`, { duration: 3800 });
+    const partner = fa.partner || "TA";
+    const place = fa.kind === "exercise"
+      ? (fa.option === "羽毛球" ? "羽毛球场" : fa.option === "跳绳" ? "跳绳的地方" : "散步的路上")
+      : (fa.option === "公园" ? "公园" : fa.option === "海边" ? "海边" : "游乐场");
+    S.bubble.show(`【${partner}】在${place}等你，快来找${partner === "TA" ? "TA" : "她"}。`, { duration: 3800 });
     S.sfx.play("open");
     return;
   }

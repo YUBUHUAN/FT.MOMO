@@ -1,5 +1,5 @@
 /* MomoPet service worker — app shell only, API is always live. */
-const CACHE = "momo-shell-v10";
+const CACHE = "momo-shell-v11";
 const ASSETS = [
   "/",
   "/index.html",

@@ -365,14 +365,21 @@ public partial class MainWindow : Window
             _exerciseTimer.Stop();
             StopExerciseMotion();
             bool exercise = Str(friend, "kind") == "exercise";
+            string partner = Str(friend, "partner", "TA");
+            AwayKicker.Text = exercise ? "动起来，别偷懒" : "走，一起溜达去";
             AwayEmoji.Text = exercise ? "🏸" : "🌳";
-            AwayTitle.Text = $"和【{Str(friend, "partner", "密友")}】{(exercise ? "一起运动" : "一起出游")}";
-            AwayNote.Text = $"{Str(friend, "option", "")} · 固定 30 分钟。";
+            AwayTitle.Text = $"和【{partner}】{(exercise ? "一起动一动" : "出门啦")}";
+            AwayNote.Text = exercise ? $"{Str(friend, "option", "运动")}已经准备好了，回来会带一张合照。" : "不用赶时间，回来会带一张合照。";
+            EarlyBtn.Content = "提前结束";
+            PeekBtn.Content = "看看 TA";
             _awayTimer.Start();
             AwayTick();
         }
         else if (outingNode is JsonObject outing)
         {
+            AwayKicker.Text = "她出门了";
+            EarlyBtn.Content = "提前回来";
+            PeekBtn.Content = "看看她";
             Pet.Visibility = Visibility.Collapsed;
             PetShadow.Visibility = Visibility.Collapsed;
             Dock.Visibility = Visibility.Collapsed;
@@ -1099,7 +1106,11 @@ public partial class MainWindow : Window
         TonePlayer.Open();
         if (State?["friendActivity"] is JsonObject friend && Str(friend, "status") == "active")
         {
-            ShowBubble($"【{Str(friend, "partner", "密友")}】在{Str(friend, "option", "")}等你。", 4200);
+            string partner = Str(friend, "partner", "TA");
+            string place = Str(friend, "kind") == "exercise"
+                ? (Str(friend, "option") == "羽毛球" ? "羽毛球场" : Str(friend, "option") == "跳绳" ? "跳绳的地方" : "散步的路上")
+                : (Str(friend, "option") == "公园" ? "公园" : Str(friend, "option") == "海边" ? "海边" : "游乐场");
+            ShowBubble($"【{partner}】在{place}等你，快来找她。", 4200);
             return;
         }
         string? placeId = State?["outing"]?["placeId"]?.GetValue<string>();
@@ -1929,9 +1940,6 @@ public partial class MainWindow : Window
             }
             var act = events?["activity"];
             string status = act == null ? "" : Str(act, "status");
-            if (status == "active" || status == "pending") State["friendActivity"] = act!.DeepClone();
-            else if (State["friendActivity"] != null) State["friendActivity"] = null;
-            if (status == "active") RenderState();
             if (status == "pending")
                 FriendBtn.Content = Str(act!, "from") == "me" ? "⏳" : "💌";
             else if (status == "active")
@@ -2352,7 +2360,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.7.0.9 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.7.1.0 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }

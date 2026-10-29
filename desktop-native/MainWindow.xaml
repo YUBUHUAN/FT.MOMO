@@ -136,7 +136,7 @@
                        HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,6" />
           </Grid>
         </Border>
-        <TextBlock Text="她出门了" FontSize="9.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" />
+        <TextBlock x:Name="AwayKicker" Text="她出门了" FontSize="9.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" />
         <TextBlock x:Name="AwayTitle" Text="去公园走走" FontFamily="{StaticResource HandFont}" FontSize="18"
                    HorizontalAlignment="Center" Margin="0,4,0,0" />
         <TextBlock x:Name="AwayCount" Text="10:00" FontFamily="Georgia" FontSize="29" HorizontalAlignment="Center"
