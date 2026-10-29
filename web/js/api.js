@@ -322,6 +322,12 @@ class LocalApi {
     return body;
   }
 
+  async friendHistory(limit = 20) {
+    const { res, body } = await fetchJson(`/api/friend/history?limit=${encodeURIComponent(limit)}`, { headers: authHeaders(this.token) });
+    if (!res.ok || body.ok === false) throw Object.assign(new Error(body.error || "friend_failed"), { status: res.status, body });
+    return body;
+  }
+
   async friendEventAck(id) {
     const { res, body } = await fetchJson("/api/friend/events/ack", {
       method: "POST", headers: authHeaders(this.token, { "content-type": "application/json" }),
@@ -601,6 +607,10 @@ class CloudApi {
 
   async friendEvents() {
     return cloudRpc("friend_events", { p_token: this.token });
+  }
+
+  async friendHistory(limit = 20) {
+    return cloudRpc("friend_history", { p_token: this.token, p_limit: limit });
   }
 
   async friendEventAck(id) {

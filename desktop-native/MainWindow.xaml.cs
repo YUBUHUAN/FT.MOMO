@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -178,7 +179,7 @@ public partial class MainWindow : Window
         ExerciseBtn.Click += (_, _) => OpenExercise();
         BackgroundBtn.Click += (_, _) => OpenBackgroundSheet();
         ProfileBtn.Click += (_, _) => OpenProfile();
-        FriendBtn.Click += (_, _) => OpenFriend();
+        FriendBtn.Click += (_, _) => OpenFriendWeb();
         StopExerciseBtn.Click += (_, _) => _ = StopExerciseNowAsync();
         ExercisePeekBtn.Click += (_, _) => PeekExercise();
         MoodPill.MouseLeftButtonDown += (_, _) => OpenProfile();
@@ -1927,9 +1928,13 @@ public partial class MainWindow : Window
                 }
             }
             var act = events?["activity"];
-            if (act != null && Str(act, "status") == "pending")
-                FriendBtn.Content = Str(act, "from") == "me" ? "⏳" : "💌";
-            else if (act != null && Str(act, "status") == "active")
+            string status = act == null ? "" : Str(act, "status");
+            if (status == "active" || status == "pending") State["friendActivity"] = act!.DeepClone();
+            else if (State["friendActivity"] != null) State["friendActivity"] = null;
+            if (status == "active") RenderState();
+            if (status == "pending")
+                FriendBtn.Content = Str(act!, "from") == "me" ? "⏳" : "💌";
+            else if (status == "active")
                 FriendBtn.Content = "🎈";
             else if (list == null || list.Count == 0)
                 FriendBtn.Content = "🤝";
@@ -1978,6 +1983,45 @@ public partial class MainWindow : Window
         cancel.Click += (_, _) => HideModal();
         panel.Children.Add(cancel);
         ShowModal(panel);
+    }
+
+
+    private async void OpenFriendWeb()
+    {
+        try
+        {
+            var win = new Window
+            {
+                Title = "密友手帐",
+                Width = 430,
+                Height = 840,
+                MinWidth = 380,
+                MinHeight = 680,
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Background = (Brush)FindResource("Paper")
+            };
+            var web = new Microsoft.Web.WebView2.Wpf.WebView2();
+            win.Content = web;
+            win.Show();
+            await web.EnsureCoreWebView2Async();
+            string token = JsonSerializer.Serialize(_api.Token);
+            string account = JsonSerializer.Serialize(new { username = _api.AccountName });
+            string script = $"try{{localStorage.setItem('wowo.token',{token});localStorage.setItem('wowo.account',{account});}}catch(e){{}}";
+            await web.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(script);
+            web.Source = new Uri(_server.BaseUrl + "/friend.html");
+        }
+        catch (Exception ex)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(_server.BaseUrl + "/friend.html") { UseShellExecute = true });
+            }
+            catch
+            {
+                ShowToast("密友页打开失败：" + ex.Message);
+            }
+        }
     }
 
     private async void OpenFriend()
@@ -2308,7 +2352,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.7.0.8 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.7.0.9 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }

@@ -790,6 +790,11 @@ data: ${JSON.stringify({ state, now: new Date().toISOString() })}
       try { const body = await readBody(req); return send(res, 200, await cloud.friendActivityCancel(session.token, String(body.id || ""))); }
       catch (err) { return cloudFailure(res, err); }
     }
+    if (pathname === "/api/friend/history" && req.method === "GET") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      return friendCall(res, "friend_history", { p_token: session.token, p_limit: Number(query.get("limit") || 20) });
+    }
     if (pathname === "/api/friend/events" && req.method === "GET") {
       const session = await authenticate(req, url);
       if (!session) return authRequired(res);

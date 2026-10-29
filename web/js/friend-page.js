@@ -14,7 +14,7 @@ const clock = (ms) => {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 };
 
-const S = { api: null, code: "", friend: null, activity: null, events: [], tick: null, busy: false };
+const S = { api: null, code: "", friend: null, activity: null, events: [], logs: [], historyTab: "outing", tick: null, busy: false };
 const root = $("#friendRoot");
 const toastEl = $("#fbToast");
 const modal = $("#fbModal");
@@ -45,15 +45,17 @@ async function load() {
   if (!S.api || S.busy) return;
   S.busy = true;
   try {
-    const [code, status, events] = await Promise.all([
+    const [code, status, events, history] = await Promise.all([
       S.api.friendCode(),
       S.api.friendStatus(),
-      S.api.friendEvents().catch(() => null)
+      S.api.friendEvents().catch(() => null),
+      S.api.friendHistory(20).catch(() => null)
     ]);
     if (code && code.ok !== false) S.code = code.code || "";
     S.friend = status || null;
     S.activity = events && events.activity ? events.activity : null;
     S.events = events && events.events ? events.events : [];
+    S.logs = history && history.logs ? history.logs : [];
     render();
     handleEvents();
   } catch (_) {
@@ -122,11 +124,11 @@ function actions() {
       </button>
       <button class="fb-action out" data-action="outing" ${active ? "disabled" : ""}>
         <div class="art"><span class="sun"></span><span class="hill a"></span><span class="hill b"></span><img class="a" src="/assets/friend-wowo.png" alt=""><img class="b" src="/assets/friend-momo.png" alt=""></div>
-        <div class="label">双人出游</div><div class="hint">30 分钟</div>
+        <div class="label">双人出游</div><div class="hint">一起出门透透气</div>
       </button>
       <button class="fb-action sport" data-action="exercise" ${active ? "disabled" : ""}>
         <div class="art"><span class="court"></span><span class="bird"></span><img class="a" src="/assets/friend-wowo.png" alt=""><img class="b" src="/assets/friend-momo.png" alt=""></div>
-        <div class="label">双人运动</div><div class="hint">羽毛球</div>
+        <div class="label">双人运动</div><div class="hint">拉上她动一动</div>
       </button>
     </div>`;
 }
@@ -143,6 +145,23 @@ function pending() {
   return `<div class="fb-pending"><span>${mine ? "已发出" : "收到"}${kind}邀请（${esc(a.option || "")}）${mine ? "，等待回复" : ""}</span><div class="fb-pending-actions">${buttons}</div></div>`;
 }
 
+function historySection() {
+  const logs = S.logs.filter((l) => l.kind === S.historyTab);
+  const tabs = [["outing", "出游"], ["exercise", "运动"]].map(([id, label]) =>
+    `<button class="fb-history-tab ${S.historyTab === id ? "on" : ""}" data-history-tab="${id}">${label}</button>`).join("");
+  const rows = logs.length ? logs.map((l) => {
+    const date = l.endedAt ? new Date(l.endedAt).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" }) : "";
+    const minutes = Math.max(1, Math.round(Number(l.durationSeconds || 1800) / 60));
+    return `<article class="fb-log">
+      <div class="fb-log-head"><b>${esc(l.option || "")}</b><span>${date} · ${minutes} 分钟</span></div>
+      <p class="fb-log-line"><i>探索</i>${esc(l.exploration || "")}</p>
+      <p class="fb-log-line surprise"><i>惊喜</i>${esc(l.surprise || "")}</p>
+    </article>`;
+  }).join("") : `<div class="fb-log-empty">还没有${S.historyTab === "outing" ? "一起出游" : "一起运动"}的记录。<br>下一次结束后会留在这里。</div>`;
+  return `<div class="fb-section"><h2>一起做过的事</h2><span>MEMORIES</span></div>
+    <div class="fb-history"><div class="fb-history-tabs">${tabs}</div>${rows}</div>`;
+}
+
 function render() {
   if (!S.friend) return;
   const linked = S.friend.linked;
@@ -151,6 +170,7 @@ function render() {
     html += ticket();
     html += actions();
     html += pending();
+    html += historySection();
     html += `<button class="fb-unbind" data-unbind>解除密友绑定</button>`;
   }
   root.innerHTML = html;
@@ -169,6 +189,10 @@ function bind() {
   root.querySelectorAll("[data-accept]").forEach((el) => el.addEventListener("click", () => respond(true)));
   root.querySelectorAll("[data-decline]").forEach((el) => el.addEventListener("click", () => respond(false)));
   root.querySelectorAll("[data-cancel]").forEach((el) => el.addEventListener("click", cancelActivity));
+  root.querySelectorAll("[data-history-tab]").forEach((el) => el.addEventListener("click", () => {
+    S.historyTab = el.dataset.historyTab;
+    render();
+  }));
 }
 
 function tick() {

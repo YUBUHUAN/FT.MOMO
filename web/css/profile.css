@@ -1269,3 +1269,15 @@ body.friend-mode .friend-card .friend-panel { gap: 14px; }
 .friend-art-second { margin-left: -18px; transform: translateY(10px); }
 .friend-art-shuttle { width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 54px solid #f6f1e8; margin-left: 14px; filter: drop-shadow(0 2px 0 #aab5aa); }
 .friend-art-label { margin-left: 8px; font-size: 14px; color: var(--ink2); letter-spacing: .06em; }
+
+/* compact friend entry on the notebook page */
+.friend-entry{display:flex;align-items:center;gap:11px;padding:11px 12px;border:1px solid #e7dccd;border-radius:16px;background:#fffdf8;cursor:pointer;transition:transform .15s ease, box-shadow .15s ease}
+.friend-entry:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(80,61,44,.08)}
+.friend-entry img{width:46px;height:46px;border-radius:50%;object-fit:cover;border:1.5px solid #fff;box-shadow:0 2px 8px rgba(60,40,50,.12)}
+.friend-entry-main{flex:1;min-width:0}
+.friend-entry .friend-name{font-size:15px}
+.friend-entry .friend-sub{margin-top:3px}
+.friend-entry-badge{flex:0 0 auto;border:1px solid #d8cbbb;border-radius:999px;padding:5px 9px;font-size:9px;color:#8d8377;background:#fbf6ee}
+.friend-entry-arrow{flex:0 0 auto;font-family:Georgia,serif;font-size:20px;color:#8d8377;line-height:1}
+.friend-entry-empty{gap:0}
+.friend-entry-empty .friend-entry-main{text-align:left}

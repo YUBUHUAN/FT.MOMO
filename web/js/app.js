@@ -296,6 +296,14 @@ async function checkFriendEvents() {
     }
 
     const act = out.activity;
+    const previousActivity = S.state.friendActivity;
+    if (act && (act.status === "active" || act.status === "pending")) {
+      S.state.friendActivity = act;
+    } else if (previousActivity) {
+      S.state.friendActivity = null;
+    }
+    if (act && act.status === "active") renderAway();
+    else if (!act && previousActivity && previousActivity.status === "active") renderAway();
     const current = S.state.friendActivity;
     if (current && current.endsAt > Date.now()) {
       const left = Math.max(0, Math.ceil((current.endsAt - Date.now()) / 60000));

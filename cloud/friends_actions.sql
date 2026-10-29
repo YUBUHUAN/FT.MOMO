@@ -52,6 +52,68 @@ create table if not exists public.friend_activities (
 create index if not exists friend_activities_pair_idx
   on public.friend_activities (link_id, status, created_at desc);
 
+create table if not exists public.friend_activity_logs (
+  id uuid primary key default gen_random_uuid(),
+  activity_id uuid not null unique,
+  link_id uuid not null,
+  kind text not null check (kind in ('outing', 'exercise')),
+  option text not null,
+  partner_name text,
+  initiator_app text,
+  initiator_account_id uuid,
+  partner_app text,
+  partner_account_id uuid,
+  started_at timestamptz,
+  ended_at timestamptz not null default now(),
+  duration_seconds int not null default 1800,
+  exploration_text text not null,
+  surprise_text text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists friend_activity_logs_link_idx
+  on public.friend_activity_logs (link_id, ended_at desc);
+
+create table if not exists public.friend_quote_lines (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('outing', 'exercise')),
+  quote_type text not null check (quote_type in ('exploration', 'surprise')),
+  text text not null,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  unique (kind, quote_type, text)
+);
+alter table public.friend_activity_logs enable row level security;
+alter table public.friend_quote_lines enable row level security;
+revoke all on table public.friend_activity_logs from anon, authenticated;
+revoke all on table public.friend_quote_lines from anon, authenticated;
+
+insert into public.friend_quote_lines (kind, quote_type, text) values
+  ('outing', 'exploration', '绕到湖边的时候，风把她的发带吹起来了。'),
+  ('outing', 'exploration', '游乐场的摩天轮转到最高处，她偷偷看了你一眼。'),
+  ('outing', 'exploration', '海边捡到一枚很普通的贝壳，她说这个最像你。'),
+  ('outing', 'exploration', '公园长椅旁边，有一只猫陪你们坐了很久。'),
+  ('outing', 'exploration', '走错了一条小路，反而看见一整片开得很好的花。'),
+  ('outing', 'exploration', '她数着路灯走，数到第七盏的时候笑了。'),
+  ('outing', 'surprise', '回来时口袋里多了一颗糖，是给你的。'),
+  ('outing', 'surprise', '她带回来一片叶子，说夹在手帐里就不会褪色。'),
+  ('outing', 'surprise', '路上遇到卖气球的，她给你挑了一个最圆的。'),
+  ('outing', 'surprise', '她偷偷拍了一张你的背影，存在手机最里面。'),
+  ('outing', 'surprise', '回来的路上她走得很慢，说想和你多待一会儿。'),
+  ('outing', 'surprise', '她记住你说过喜欢的那家小店，下次还想一起去。'),
+  ('exercise', 'exploration', '羽毛球打到第十回合，两个人同时笑场了。'),
+  ('exercise', 'exploration', '跳绳总是不合拍，最后干脆改成一起数数。'),
+  ('exercise', 'exploration', '散步时发现一条从没走过的小路，尽头是一棵很大的树。'),
+  ('exercise', 'exploration', '她教你一个很笨的拉伸动作，自己先笑倒了。'),
+  ('exercise', 'exploration', '运动到一半开始比谁先看到云变成小动物。'),
+  ('exercise', 'exploration', '她假装很专业地纠正你的姿势，其实自己也做错了。'),
+  ('exercise', 'surprise', '她递来一瓶水，瓶身上还留着她的温度。'),
+  ('exercise', 'surprise', '结束以后她偷偷把最后一块毛巾留给了你。'),
+  ('exercise', 'surprise', '她说下次还要一起，语气比平时认真一点。'),
+  ('exercise', 'surprise', '回去的路上她一直在哼刚才运动时的歌。'),
+  ('exercise', 'surprise', '她把你随口说的“再来一次”记在了心里。'),
+  ('exercise', 'surprise', '运动完她变戏法一样拿出两颗糖，一人一颗。')
+on conflict (kind, quote_type, text) do nothing;
+
 alter table public.friend_events enable row level security;
 alter table public.friend_activities enable row level security;
 alter table public.friend_food_catalog enable row level security;
@@ -320,6 +382,7 @@ as $$
 declare
   v_link record; v_act record; v_state jsonb; v_other_state jsonb;
   v_mood numeric; v_health numeric; v_fatigue numeric; v_name text;
+  v_explore text; v_surprise text; v_started timestamptz; v_duration int;
 begin
   select * into v_link from public.friend_active_link_v2(p_token);
   if v_link.link_id is null then return jsonb_build_object('ok', true); end if;
@@ -387,6 +450,24 @@ begin
     update public.wowo_states set state = v_state, rev = rev + 1, updated_at = now() where account_id = v_link.me_id;
     update public.momo_states set state = v_other_state, rev = rev + 1, updated_at = now() where account_id = v_link.other_id;
   end if;
+  select text into v_explore from public.friend_quote_lines
+   where kind = v_act.kind and quote_type = 'exploration' and active
+   order by random() limit 1;
+  select text into v_surprise from public.friend_quote_lines
+   where kind = v_act.kind and quote_type = 'surprise' and active
+   order by random() limit 1;
+  v_explore := coalesce(v_explore, '一起走过的路，比地图上多了一点点。');
+  v_surprise := coalesce(v_surprise, '回来时带了一点小东西，是给你的。');
+  v_started := coalesce(v_act.responded_at, v_act.created_at);
+  v_duration := greatest(60, extract(epoch from (now() - v_started))::int);
+  insert into public.friend_activity_logs
+    (activity_id, link_id, kind, option, partner_name, initiator_app, initiator_account_id,
+     partner_app, partner_account_id, started_at, ended_at, duration_seconds, exploration_text, surprise_text)
+  values
+    (v_act.id, v_act.link_id, v_act.kind, v_act.option, v_link.other_name, v_act.initiator_app, v_act.initiator_account_id,
+     v_act.partner_app, v_act.partner_account_id, v_started, now(), v_duration, v_explore, v_surprise)
+  on conflict (activity_id) do nothing;
+
   update public.friend_activities set status = 'completed', result = jsonb_build_object('mood', v_mood, 'health', v_health, 'fatigue', v_fatigue) where id = v_act.id;
   insert into public.friend_events (link_id, target_app, target_account_id, type, payload)
   values (v_link.link_id, v_link.other_app, v_link.other_id, 'activity_finished',
@@ -457,3 +538,28 @@ grant execute on function public.friend_events(text) to anon, authenticated;
 grant execute on function public.friend_event_ack(text, uuid) to anon, authenticated;
 
 commit;
+
+
+create or replace function public.friend_history(p_token text, p_limit int default 20)
+returns jsonb
+language plpgsql security definer set search_path = public, extensions, pg_temp
+as $$
+declare v_link record; v_rows jsonb;
+begin
+  select * into v_link from public.friend_active_link_v2(p_token);
+  if v_link.link_id is null then return jsonb_build_object('ok', true, 'logs', '[]'::jsonb); end if;
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'id', l.id, 'kind', l.kind, 'option', l.option, 'partnerName', l.partner_name,
+    'startedAt', l.started_at, 'endedAt', l.ended_at, 'durationSeconds', l.duration_seconds,
+    'exploration', l.exploration_text, 'surprise', l.surprise_text
+  ) order by l.ended_at desc), '[]'::jsonb)
+  into v_rows
+  from (
+    select * from public.friend_activity_logs
+    where link_id = v_link.link_id
+    order by ended_at desc
+    limit greatest(1, least(50, coalesce(p_limit, 20)))
+  ) l;
+  return jsonb_build_object('ok', true, 'logs', v_rows);
+end;
+$$;

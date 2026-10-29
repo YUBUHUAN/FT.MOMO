@@ -221,7 +221,7 @@ function render(state) {
   els.dialEmoji.textContent = mood.emoji;
   els.dialValue.textContent = Math.round(s.mood);
   els.pTag.textContent = `DAY ${String(days).padStart(2, "0")}`;
-  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.7.0.8"}`;
+  if (els.pVersion) els.pVersion.textContent = `墨墨 v${C.VERSION || "1.7.0.9"}`;
   if (els.pStorage) els.pStorage.textContent = "云端同步 · 数据保存在 Supabase";
 
   const fullness = Number(s.fullness) || 0;
@@ -302,81 +302,41 @@ function renderFriend() {
   if (!els.friendHint) return;
   const pending = Number(f && f.pending || 0);
   const linked = f && f.linked;
+  if (els.friendForm) els.friendForm.hidden = true;
+  if (!els.friendLinked) return;
+  els.friendLinked.hidden = false;
   if (linked) {
-    if (els.friendForm) els.friendForm.hidden = true;
-    if (els.friendLinked) {
-      els.friendLinked.hidden = false;
-      els.friendLinked.innerHTML = `
+    els.friendLinked.innerHTML = `
+      <div class="friend-entry" role="button" tabindex="0" aria-label="打开密友手帐">
         <img src="${friendAvatar(linked.app)}" alt="${escapeHtml(linked.name || "密友")}">
-        <div>
-          <div class="friend-name">${escapeHtml(linked.name || "密友")}</div>
+        <div class="friend-entry-main">
+          <div class="friend-name">密友 · ${escapeHtml(linked.name || "密友")}</div>
           <div class="friend-sub">${escapeHtml(friendStatusText(linked.status))} · 心情 ${Math.round(Number(linked.mood) || 0)}</div>
         </div>
-        <button class="friend-unbind" type="button">解除</button>
-        <div class="friend-actions">
-          <button data-friend-action="feed" type="button">喂一口</button>
-          <button data-friend-action="outing" type="button">双人出游</button>
-          <button data-friend-action="exercise" type="button">双人运动</button>
-        </div>`;
-      const unbind = els.friendLinked.querySelector(".friend-unbind");
-      if (unbind) unbind.addEventListener("click", unbindFriend);
-      els.friendLinked.querySelectorAll("[data-friend-action]").forEach((btn) => {
-        btn.addEventListener("click", () => openFriendAction(btn.dataset.friendAction));
-      });
-    }
-    if (S.friendActivity && S.friendActivity.status === "active") {
-      const a = S.friendActivity;
-      const friendName = S.friend && S.friend.linked ? S.friend.linked.name : "密友";
-      const left = Math.max(0, Math.ceil((Date.parse(a.endsAt) - Date.now()) / 60000));
-      const box = document.createElement("div");
-      box.className = "friend-pending-box friend-active-box";
-      box.innerHTML = `<span>正在和【${escapeHtml(friendName)}】${a.kind === "exercise" ? "双人运动" : "双人出游"}（${escapeHtml(a.option || "")}）· 还剩 ${left} 分钟</span>`;
-      const end = document.createElement("button");
-      end.type = "button"; end.textContent = "提前结束";
-      end.addEventListener("click", async () => {
-        try { await S.api.friendActivityCancel(a.id); toast("已结束"); await refreshFriend(); }
-        catch (_) { toast("操作失败"); }
-      });
-      box.appendChild(end);
-      els.friendLinked.appendChild(box);
-    }
-    if (S.friendActivity && S.friendActivity.status === "pending") {
-      const a = S.friendActivity;
-      const mine = a.from === "me";
-      const box = document.createElement("div");
-      box.className = "friend-pending-box";
-      box.innerHTML = `<span>${mine ? "已发出" : "收到"}${a.kind === "exercise" ? "双人运动" : "双人出游"}邀请（${escapeHtml(a.option || "")}）${mine ? "，等待回复" : ""}</span>`;
-      const cancel = document.createElement("button");
-      cancel.type = "button";
-      cancel.textContent = mine ? "取消申请" : "拒绝";
-      cancel.addEventListener("click", async () => {
-        try {
-          if (mine) await S.api.friendActivityCancel(a.id);
-          else await S.api.friendActivityRespond(a.id, false);
-          toast(mine ? "已取消" : "已拒绝");
-          await refreshFriend();
-        } catch (_) { toast("操作失败"); }
-      });
-      box.appendChild(cancel);
-      if (!mine) {
-        const ok = document.createElement("button");
-        ok.type = "button"; ok.className = "primary"; ok.textContent = "同意";
-        ok.addEventListener("click", async () => {
-          try { await S.api.friendActivityRespond(a.id, true); toast("好，一起出发。"); await refreshFriend(); }
-          catch (err) { toast(err.message === "busy" ? "现在没空" : "接受失败"); }
-        });
-        box.appendChild(ok);
-      }
-      els.friendLinked.appendChild(box);
-    }
-    els.friendHint.textContent = "已经绑定。双方都发送过申请后，好友关系才成立。";
+        <span class="friend-entry-badge">${pending > 0 ? "有邀请" : "查看"}</span>
+        <span class="friend-entry-arrow">→</span>
+      </div>`;
+    els.friendLinked.querySelector(".friend-entry")?.addEventListener("click", () => { location.href = "/friend.html"; });
+    els.friendLinked.querySelector(".friend-entry")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); location.href = "/friend.html"; }
+    });
+    els.friendHint.textContent = "";
     return;
   }
-  if (els.friendForm) els.friendForm.hidden = false;
-  if (els.friendLinked) { els.friendLinked.hidden = true; els.friendLinked.innerHTML = ""; }
-  els.friendHint.textContent = pending > 0
-    ? `有 ${pending} 位用户向你发来申请。请向对方索取好友码，在下面回发申请，双方才会绑定。`
-    : "把好友码发给对方；你也要输入对方的好友码并发送申请，双方都发过才会绑定。";
+  els.friendLinked.innerHTML = `
+    <div class="friend-entry friend-entry-empty" role="button" tabindex="0">
+      <div class="friend-entry-main">
+        <div class="friend-name">还没有密友</div>
+        <div class="friend-sub">去密友手帐绑定一个人</div>
+      </div>
+      <span class="friend-entry-badge">${pending > 0 ? "有申请" : "打开"}</span>
+      <span class="friend-entry-arrow">→</span>
+    </div>`;
+  els.friendLinked.querySelector(".friend-entry")?.addEventListener("click", () => { location.href = "/friend.html"; });
+  els.friendLinked.querySelector(".friend-entry")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); location.href = "/friend.html"; }
+  });
+  els.friendHint.textContent = "";
 }
 
 function openFriendAction(kind) {
