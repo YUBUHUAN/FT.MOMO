@@ -340,7 +340,7 @@ create or replace function public.friend_activity_cancel(p_token text, p_id uuid
 returns jsonb
 language plpgsql security definer set search_path = public, extensions, pg_temp
 as $$
-declare v_link record; v_act record; v_state jsonb; v_other_state jsonb;
+declare v_link record; v_act record; v_state jsonb; v_other_state jsonb; v_explore text; v_surprise text; v_started timestamptz; v_duration int;
 begin
   select * into v_link from public.friend_active_link_v2(p_token);
   if v_link.link_id is null then return jsonb_build_object('ok', false, 'error', 'not_linked'); end if;
@@ -360,6 +360,19 @@ begin
     end if;
     v_state := coalesce(v_state, '{}'::jsonb) - 'friendActivity';
     v_other_state := coalesce(v_other_state, '{}'::jsonb) - 'friendActivity';
+    select text into v_explore from public.friend_quote_lines where kind = v_act.kind and quote_type = 'exploration' and active order by random() limit 1;
+    select text into v_surprise from public.friend_quote_lines where kind = v_act.kind and quote_type = 'surprise' and active order by random() limit 1;
+    v_explore := coalesce(v_explore, '一起走过的路，比地图上多了一点点。');
+    v_surprise := coalesce(v_surprise, '回来时带了一点小东西，是给你的。');
+    v_started := coalesce(v_act.responded_at, v_act.created_at);
+    v_duration := greatest(60, extract(epoch from (now() - v_started))::int);
+    insert into public.friend_activity_logs
+      (activity_id, link_id, kind, option, partner_name, initiator_app, initiator_account_id,
+       partner_app, partner_account_id, started_at, ended_at, duration_seconds, exploration_text, surprise_text)
+    values
+      (v_act.id, v_act.link_id, v_act.kind, v_act.option, v_link.other_name, v_act.initiator_app, v_act.initiator_account_id,
+       v_act.partner_app, v_act.partner_account_id, v_started, now(), v_duration, v_explore, v_surprise)
+    on conflict (activity_id) do nothing;
     if v_link.me_app = 'momo' then
       update public.momo_states set state = v_state, rev = rev + 1, updated_at = now() where account_id = v_link.me_id;
       update public.wowo_states set state = v_other_state, rev = rev + 1, updated_at = now() where account_id = v_link.other_id;
