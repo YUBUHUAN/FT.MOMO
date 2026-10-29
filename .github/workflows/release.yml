@@ -91,7 +91,7 @@ jobs:
           gh release delete v1.7.1.1 --yes 2>/dev/null || true
           gh release create v1.7.1.1 android/release/MomoPet-Android-1.7.1.1.apk \
             --title "墨墨桌宠 v1.7.1.1" \
-            --notes "1.7.1.1：密友页改为卡片流 + 横向票根倒计时；主页双人活动显示完整倒计时；双人活动期间禁止单人出游/运动；PC 好友接口继续直连 Supabase。" \
+            --notes "1.7.1.1：修复 PC 双人活动状态与 ISO 时间显示；活动期间禁止双方投喂并增加服务端触发器；保留 1.7.1.0 旧版；密友历史与语录保留。" \
             --verify-tag --draft
 
       - name: Upload Windows setup
