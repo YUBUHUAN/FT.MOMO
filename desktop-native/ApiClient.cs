@@ -27,6 +27,7 @@ public sealed class ApiClient
     public string AccountId { get; private set; } = "";
     public JsonNode? Content { get; private set; }
     public JsonNode? State { get; set; }
+    public long? StateRev { get; private set; }
     public bool Online { get; private set; } = true;
 
     public ApiClient(string baseUrl)
@@ -110,7 +111,11 @@ public sealed class ApiClient
             if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized) throw new ApiException("unauthorized");
             JsonNode root = JsonNode.Parse(json) ?? throw new ApiException("空状态");
             if (!res.IsSuccessStatusCode || root["ok"]?.GetValue<bool>() == false) throw new ApiException("state_failed");
+            if (root["state"] is not JsonObject) throw new ApiException("bad_state");
+            long? rev = ReadRev(root);
+            if (StateRev.HasValue && rev.HasValue && rev.Value < StateRev.Value) return root;
             State = root["state"];
+            if (rev.HasValue) StateRev = rev;
             Online = true;
             return root;
         }
@@ -156,6 +161,8 @@ public sealed class ApiClient
                 throw new ApiException(reason, root);
             }
             State = root["state"];
+            long? actionRev = ReadRev(root);
+            if (actionRev.HasValue) StateRev = actionRev;
             Online = true;
             return root;
         }
@@ -164,6 +171,17 @@ public sealed class ApiClient
             Online = false;
             throw;
         }
+    }
+
+    private static long? ReadRev(JsonNode root)
+    {
+        try
+        {
+            JsonNode? node = root["rev"];
+            if (node == null) return null;
+            return node.GetValue<long>();
+        }
+        catch { return null; }
     }
 
     private string FriendToken

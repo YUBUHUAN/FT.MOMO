@@ -729,7 +729,11 @@ function maybeOfflineToast() {
 
 function friendActivity() {
   const a = S.state && S.state.friendActivity;
-  return a && a.status === "active" ? a : null;
+  if (!a || typeof a !== "object") return null;
+  if (!a.id || !a.endsAt) return null;
+  if (Date.parse(a.endsAt) <= Date.now()) return null;
+  if (a.status && a.status !== "active") return null;
+  return a;
 }
 
 function renderAway() {

@@ -70,6 +70,10 @@ public partial class MainWindow : Window
     private bool _busy;
     private bool _onlineToastShown;
     private bool _isAway;
+    private JsonNode? _friendCache;
+    private string _friendCacheId = "";
+    private int _friendMissingChecks;
+    private string _presentationMode = "";
     private bool _firstTipShown;
     private string _lastHungerLevel = "";
     private bool _lastSleeping;
@@ -273,8 +277,26 @@ public partial class MainWindow : Window
         _polling = true;
         try
         {
-            await _api.GetStateAsync();
+            JsonNode root = await _api.GetStateAsync();
             SetOnline(true);
+            long? rev = ReadStateRev(root);
+            bool validSnapshot = rev.HasValue && _api.StateRev == rev && root["state"] is JsonObject;
+            if (validSnapshot)
+            {
+                if (IsActiveFriend(State?["friendActivity"], out var active))
+                {
+                    RememberFriend(active);
+                    _friendMissingChecks = 0;
+                }
+                else if (_friendCache != null)
+                {
+                    _friendMissingChecks++;
+                    if (_friendMissingChecks >= 2)
+                    {
+                        ClearFriendCache();
+                    }
+                }
+            }
             RenderState();
         }
         catch
@@ -311,6 +333,65 @@ public partial class MainWindow : Window
             ShowToast("暂时连不上小屋，正在重试…");
         }
         if (online) _onlineToastShown = false;
+    }
+
+    private static bool IsActiveFriend(JsonNode? node, out JsonObject friend)
+    {
+        friend = null!;
+        if (node is not JsonObject obj) return false;
+        string id = Str(obj, "id");
+        long ends = Long(obj, "endsAt");
+        if (string.IsNullOrWhiteSpace(id) || ends <= 0 || ends <= NowMs()) return false;
+        string status = Str(obj, "status");
+        if (status == "active")
+        {
+            friend = obj;
+            return true;
+        }
+        if (!string.IsNullOrWhiteSpace(status)) return false;
+        friend = obj;
+        return true;
+    }
+
+    private void RememberFriend(JsonObject friend)
+    {
+        string id = Str(friend, "id");
+        if (!string.IsNullOrWhiteSpace(id) && id != _friendCacheId)
+        {
+            _friendCacheId = id;
+            _friendMissingChecks = 0;
+        }
+        _friendCache = friend.DeepClone();
+    }
+
+    private void ClearFriendCache()
+    {
+        _friendCache = null;
+        _friendCacheId = "";
+        _friendMissingChecks = 0;
+    }
+
+    private void SetPresentationMode(string mode)
+    {
+        if (_presentationMode == mode) return;
+        _presentationMode = mode;
+        bool pet = mode == "pet";
+        Pet.Visibility = pet ? Visibility.Visible : Visibility.Collapsed;
+        PetShadow.Visibility = pet ? Visibility.Visible : Visibility.Collapsed;
+        AwayCard.Visibility = mode is "outing" or "friend" ? Visibility.Visible : Visibility.Collapsed;
+        ExerciseCard.Visibility = mode == "exercise" ? Visibility.Visible : Visibility.Collapsed;
+        if (!pet) Dock.Visibility = Visibility.Collapsed;
+        else UpdateDockVisibility();
+    }
+
+    private static long? ReadStateRev(JsonNode root)
+    {
+        try
+        {
+            JsonNode? node = root["rev"];
+            return node == null ? null : node.GetValue<long>();
+        }
+        catch { return null; }
     }
 
     private void RenderState()
@@ -350,18 +431,28 @@ public partial class MainWindow : Window
         }
 
         JsonNode? outingNode = s["outing"];
-        JsonNode? friendNode = s["friendActivity"];
-        bool friendActive = friendNode is JsonObject fn && Str(fn, "status") == "active";
+        JsonObject? friend = null;
+        if (IsActiveFriend(s["friendActivity"], out var directFriend))
+        {
+            RememberFriend(directFriend);
+            friend = directFriend;
+        }
+        else if (_friendCache is JsonObject cachedFriend && IsActiveFriend(cachedFriend, out var oldFriend))
+        {
+            friend = oldFriend;
+        }
+        else if (_friendCache != null)
+        {
+            ClearFriendCache();
+        }
+
+        bool friendActive = friend != null;
         bool away = outingNode is JsonObject || friendActive;
         _isAway = away;
-        if (friendActive && friendNode is JsonObject friend)
+        if (friend != null)
         {
-            Pet.Visibility = Visibility.Collapsed;
-            PetShadow.Visibility = Visibility.Collapsed;
-            Dock.Visibility = Visibility.Collapsed;
+            SetPresentationMode("friend");
             BubbleWrap.Visibility = Visibility.Collapsed;
-            AwayCard.Visibility = Visibility.Visible;
-            ExerciseCard.Visibility = Visibility.Collapsed;
             _exerciseTimer.Stop();
             StopExerciseMotion();
             bool exercise = Str(friend, "kind") == "exercise";
@@ -377,15 +468,11 @@ public partial class MainWindow : Window
         }
         else if (outingNode is JsonObject outing)
         {
+            SetPresentationMode("outing");
             AwayKicker.Text = "她出门了";
             EarlyBtn.Content = "提前回来";
             PeekBtn.Content = "看看她";
-            Pet.Visibility = Visibility.Collapsed;
-            PetShadow.Visibility = Visibility.Collapsed;
-            Dock.Visibility = Visibility.Collapsed;
             BubbleWrap.Visibility = Visibility.Collapsed;
-            AwayCard.Visibility = Visibility.Visible;
-            ExerciseCard.Visibility = Visibility.Collapsed;
             _exerciseTimer.Stop();
             StopExerciseMotion();
             AwayEmoji.Text = Str(outing, "emoji", "🌳");
@@ -396,9 +483,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            Pet.Visibility = Visibility.Visible;
-            PetShadow.Visibility = Visibility.Visible;
-            AwayCard.Visibility = Visibility.Collapsed;
+            SetPresentationMode("pet");
             _awayTimer.Stop();
             RenderExerciseState(s);
         }
@@ -464,11 +549,7 @@ public partial class MainWindow : Window
             UpdateDockVisibility();
             return;
         }
-        Pet.Visibility = Visibility.Visible;
-        PetShadow.Visibility = Visibility.Visible;
-        ExerciseCard.Visibility = Visibility.Visible;
-        AwayCard.Visibility = Visibility.Collapsed;
-        Dock.Visibility = Visibility.Collapsed;
+        SetPresentationMode("exercise");
         ExerciseTitle.Text = "正在" + Str(ex, "name", "运动");
         ExerciseNote.Text = Str(ex, "line", "正在运动……先别打扰她。");
         StartExerciseMotion(Str(ex, "kindId", "run"));
@@ -611,9 +692,13 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (State?["friendActivity"] is JsonObject fa && Str(fa, "status") == "active")
+            if (State?["friendActivity"] is JsonObject fa && IsActiveFriend(fa, out _))
                 await _api.FriendEventsAsync().ConfigureAwait(false);
             await _api.GetStateAsync();
+            if (!IsActiveFriend(State?["friendActivity"], out var activeFriend))
+                ClearFriendCache();
+            else
+                RememberFriend(activeFriend);
             RenderState();
         }
         catch { SetOnline(false); }
@@ -1071,8 +1156,8 @@ public partial class MainWindow : Window
     private void AwayTick()
     {
         JsonNode? outing = State?["outing"];
-        JsonNode? friend = State?["friendActivity"];
-        bool friendActive = friend is JsonObject fn && Str(fn, "status") == "active";
+        JsonNode? friend = _friendCache;
+        bool friendActive = IsActiveFriend(friend, out _);
         if (outing == null && !friendActive)
         {
             _awayTimer.Stop();
@@ -1904,6 +1989,7 @@ public partial class MainWindow : Window
         {
             var events = await _api.FriendEventsAsync();
             var list = events?["events"] as JsonArray;
+            bool friendEnded = false;
             if (list != null)
             {
                 foreach (JsonNode? ev in list)
@@ -1932,6 +2018,7 @@ public partial class MainWindow : Window
                     }
                     else if (type == "activity_declined" || type == "activity_cancelled" || type == "activity_finished")
                     {
+                        if (type != "activity_declined") friendEnded = true;
                         ShowBubble(type == "activity_declined" ? "对方拒绝了这次邀请。" : type == "activity_cancelled" ? "这次双人活动取消了。" : "双人活动结束了。", 3600);
                         await _api.FriendEventAckAsync(Str(ev, "id"));
                         await RefreshFriendStateAsync();
@@ -1939,6 +2026,18 @@ public partial class MainWindow : Window
                 }
             }
             var act = events?["activity"];
+            if (friendEnded)
+            {
+                ClearFriendCache();
+                RenderState();
+            }
+            else if (IsActiveFriend(act, out var active))
+            {
+                string previousId = _friendCacheId;
+                RememberFriend(active);
+                _friendMissingChecks = 0;
+                if (previousId != _friendCacheId) RenderState();
+            }
             string status = act == null ? "" : Str(act, "status");
             if (status == "pending")
                 FriendBtn.Content = Str(act!, "from") == "me" ? "⏳" : "💌";

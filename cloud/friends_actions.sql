@@ -312,11 +312,11 @@ begin
   v_state := jsonb_set(v_state, '{friendActivity}', jsonb_build_object(
     'id', v_act.id, 'kind', v_act.kind, 'option', v_act.option,
     'partner', v_link.other_name, 'partnerApp', v_link.other_app,
-    'endsAt', v_ends), true);
+    'status', 'active', 'endsAt', v_ends), true);
   v_other_state := jsonb_set(v_other_state, '{friendActivity}', jsonb_build_object(
     'id', v_act.id, 'kind', v_act.kind, 'option', v_act.option,
     'partner', v_link.me_name, 'partnerApp', v_link.me_app,
-    'endsAt', v_ends), true);
+    'status', 'active', 'endsAt', v_ends), true);
 
   if v_link.me_app = 'momo' then
     update public.momo_states set state = v_state, rev = rev + 1, updated_at = now() where account_id = v_link.me_id;
