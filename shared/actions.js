@@ -22,7 +22,9 @@
         result = engine.applyTap(state, content, a.count, now);
         break;
       case "feed":
-        result = engine.applyFeed(state, content, a.itemId, a.optionId, now);
+        result = state.friendActivity && state.friendActivity.status === "active"
+          ? { ok: false, error: "friend_busy" }
+          : engine.applyFeed(state, content, a.itemId, a.optionId, now);
         break;
       case "outing_start":
         result = state.friendActivity && state.friendActivity.status === "active"

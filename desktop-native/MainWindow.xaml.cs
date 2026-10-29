@@ -340,7 +340,7 @@ public partial class MainWindow : Window
         friend = null!;
         if (node is not JsonObject obj) return false;
         string id = Str(obj, "id");
-        long ends = Long(obj, "endsAt");
+        long ends = TimestampMs(obj, "endsAt");
         if (string.IsNullOrWhiteSpace(id) || ends <= 0 || ends <= NowMs()) return false;
         string status = Str(obj, "status");
         if (status == "active")
@@ -1163,7 +1163,7 @@ public partial class MainWindow : Window
             _awayTimer.Stop();
             return;
         }
-        long ends = friendActive ? Long(friend!, "endsAt") : Long(outing!, "endsAt");
+        long ends = friendActive ? TimestampMs(friend, "endsAt") : TimestampMs(outing, "endsAt");
         long left = ends - NowMs();
         AwayCount.Text = FormatClock(left);
         if (left <= 0 && !_finishingAway)
@@ -3811,6 +3811,22 @@ public partial class MainWindow : Window
     private static bool Bool(JsonNode? node, string key)
     {
         try { return node?[key]?.GetValue<bool>() ?? false; } catch { return false; }
+    }
+
+    private static long TimestampMs(JsonNode? node, string key)
+    {
+        try
+        {
+            JsonNode? value = node?[key];
+            if (value == null) return 0;
+            try { return value.GetValue<long>(); } catch { }
+            string text = value.GetValue<string>();
+            if (DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed))
+                return parsed.ToUnixTimeMilliseconds();
+        }
+        catch { }
+        return 0;
     }
 
     private static long NowMs() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();

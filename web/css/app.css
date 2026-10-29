@@ -2040,6 +2040,8 @@ body[data-scene="garden"] {
 .friend-badge.hidden { display: none; }
 
 /* shared activity locks solo outings */
+body.friend-busy #dockFeed,
+body.friend-busy #mFeed,
 body.friend-busy #dockOuting,
 body.friend-busy #dockExercise,
 body.friend-busy #mOuting,
