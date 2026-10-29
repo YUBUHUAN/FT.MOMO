@@ -349,9 +349,28 @@ public partial class MainWindow : Window
         }
 
         JsonNode? outingNode = s["outing"];
-        bool away = outingNode is JsonObject;
+        JsonNode? friendNode = s["friendActivity"];
+        bool friendActive = friendNode is JsonObject fn && Str(fn, "status") == "active";
+        bool away = outingNode is JsonObject || friendActive;
         _isAway = away;
-        if (outingNode is JsonObject outing)
+        if (friendActive && friendNode is JsonObject friend)
+        {
+            Pet.Visibility = Visibility.Collapsed;
+            PetShadow.Visibility = Visibility.Collapsed;
+            Dock.Visibility = Visibility.Collapsed;
+            BubbleWrap.Visibility = Visibility.Collapsed;
+            AwayCard.Visibility = Visibility.Visible;
+            ExerciseCard.Visibility = Visibility.Collapsed;
+            _exerciseTimer.Stop();
+            StopExerciseMotion();
+            bool exercise = Str(friend, "kind") == "exercise";
+            AwayEmoji.Text = exercise ? "🏸" : "🌳";
+            AwayTitle.Text = $"和【{Str(friend, "partner", "密友")}】{(exercise ? "一起运动" : "一起出游")}";
+            AwayNote.Text = $"{Str(friend, "option", "")} · 固定 30 分钟。";
+            _awayTimer.Start();
+            AwayTick();
+        }
+        else if (outingNode is JsonObject outing)
         {
             Pet.Visibility = Visibility.Collapsed;
             PetShadow.Visibility = Visibility.Collapsed;
@@ -584,6 +603,8 @@ public partial class MainWindow : Window
     {
         try
         {
+            if (State?["friendActivity"] is JsonObject fa && Str(fa, "status") == "active")
+                await _api.FriendEventsAsync().ConfigureAwait(false);
             await _api.GetStateAsync();
             RenderState();
         }
@@ -1042,12 +1063,14 @@ public partial class MainWindow : Window
     private void AwayTick()
     {
         JsonNode? outing = State?["outing"];
-        if (outing == null)
+        JsonNode? friend = State?["friendActivity"];
+        bool friendActive = friend is JsonObject fn && Str(fn, "status") == "active";
+        if (outing == null && !friendActive)
         {
             _awayTimer.Stop();
             return;
         }
-        long ends = Long(outing, "endsAt");
+        long ends = friendActive ? Long(friend!, "endsAt") : Long(outing!, "endsAt");
         long left = ends - NowMs();
         AwayCount.Text = FormatClock(left);
         if (left <= 0 && !_finishingAway)
@@ -1073,6 +1096,11 @@ public partial class MainWindow : Window
     private void Peek()
     {
         TonePlayer.Open();
+        if (State?["friendActivity"] is JsonObject friend && Str(friend, "status") == "active")
+        {
+            ShowBubble($"【{Str(friend, "partner", "密友")}】在{Str(friend, "option", "")}等你。", 4200);
+            return;
+        }
         string? placeId = State?["outing"]?["placeId"]?.GetValue<string>();
         string line = "";
         if (ContentData?["OUTINGS"] is JsonArray places)
@@ -1091,6 +1119,19 @@ public partial class MainWindow : Window
 
     private void AskEarlyBack()
     {
+        if (State?["friendActivity"] is JsonObject friend && Str(friend, "status") == "active")
+        {
+            var confirm = System.Windows.MessageBox.Show("要提前结束这次双人活动吗？", "一起结束", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
+            if (confirm == MessageBoxResult.Yes)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try { await _api.FriendActivityCancelAsync(Str(friend, "id")); await _api.GetStateAsync(); Dispatcher.Invoke(RenderState); }
+                    catch { Dispatcher.Invoke(() => ShowToast("操作失败")); }
+                });
+            }
+            return;
+        }
         if (State?["outing"] == null) return;
         ShowConfirm("要提前回来吗？", "她还没逛完。提前回来只能拿到一部分心情值，不过……她应该会想见你。", "让她回来", async () =>
         {
@@ -2267,7 +2308,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.7.0.7 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.7.0.8 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }

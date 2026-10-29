@@ -317,8 +317,9 @@ function startFriendWatch() {
   checkFriendEvents();
   S.friendPoll = setInterval(checkFriendEvents, 3000);
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) checkFriendEvents();
+    if (!document.hidden) { checkFriendEvents(); refreshFriendState(); }
   });
+  window.addEventListener("pageshow", () => { checkFriendEvents(); refreshFriendState(); });
 }
 
 function finishBoot() {
