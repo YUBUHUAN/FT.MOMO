@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -165,65 +166,62 @@ public sealed class ApiClient
         }
     }
 
-    public async Task<JsonNode> FriendCodeAsync() =>
-        await FriendGetAsync("api/friend/code");
+    public Task<JsonNode> FriendCodeAsync()
+        => CloudRpcAsync("friend_code_for", new JsonObject { ["p_token"] = Token });
 
-    public async Task<JsonNode> FriendPendingAsync() =>
-        await FriendGetAsync("api/friend/pending");
+    public Task<JsonNode> FriendPendingAsync()
+        => CloudRpcAsync("friend_pending", new JsonObject { ["p_token"] = Token });
 
-    public async Task<JsonNode> FriendStatusAsync() =>
-        await FriendGetAsync("api/friend/status");
+    public Task<JsonNode> FriendStatusAsync()
+        => CloudRpcAsync("friend_status", new JsonObject { ["p_token"] = Token });
 
-    public async Task<JsonNode> FriendRequestAsync(string code) =>
-        await FriendPostAsync("api/friend/request", new JsonObject { ["code"] = code });
+    public Task<JsonNode> FriendRequestAsync(string code)
+        => CloudRpcAsync("friend_request", new JsonObject { ["p_token"] = Token, ["p_code"] = code });
 
-    public async Task<JsonNode> FriendUnbindAsync() =>
-        await FriendPostAsync("api/friend/unbind", new JsonObject());
+    public Task<JsonNode> FriendUnbindAsync()
+        => CloudRpcAsync("friend_unbind", new JsonObject { ["p_token"] = Token });
 
-    public async Task<JsonNode> FriendFeedAsync(string foodId) =>
-        await FriendPostAsync("api/friend/feed", new JsonObject { ["foodId"] = foodId });
+    public Task<JsonNode> FriendFeedAsync(string foodId)
+        => CloudRpcAsync("friend_feed", new JsonObject { ["p_token"] = Token, ["p_food_id"] = foodId });
 
-    public async Task<JsonNode> FriendActivityRequestAsync(string kind, string option) =>
-        await FriendPostAsync("api/friend/activity/request", new JsonObject { ["kind"] = kind, ["option"] = option });
+    public Task<JsonNode> FriendActivityRequestAsync(string kind, string option)
+        => CloudRpcAsync("friend_activity_request", new JsonObject { ["p_token"] = Token, ["p_kind"] = kind, ["p_option"] = option });
 
-    public async Task<JsonNode> FriendActivityRespondAsync(string id, bool accept) =>
-        await FriendPostAsync("api/friend/activity/respond", new JsonObject { ["id"] = id, ["accept"] = accept });
+    public Task<JsonNode> FriendActivityRespondAsync(string id, bool accept)
+        => CloudRpcAsync("friend_activity_respond", new JsonObject { ["p_token"] = Token, ["p_id"] = id, ["p_accept"] = accept });
 
-    public async Task<JsonNode> FriendActivityCancelAsync(string id) =>
-        await FriendPostAsync("api/friend/activity/cancel", new JsonObject { ["id"] = id });
+    public Task<JsonNode> FriendActivityCancelAsync(string id)
+        => CloudRpcAsync("friend_activity_cancel", new JsonObject { ["p_token"] = Token, ["p_id"] = id });
 
-    public async Task<JsonNode> FriendEventsAsync() =>
-        await FriendGetAsync("api/friend/events");
+    public Task<JsonNode> FriendEventsAsync()
+        => CloudRpcAsync("friend_events", new JsonObject { ["p_token"] = Token });
 
-    public async Task<JsonNode> FriendEventAckAsync(string id) =>
-        await FriendPostAsync("api/friend/events/ack", new JsonObject { ["id"] = id });
+    public Task<JsonNode> FriendEventAckAsync(string id)
+        => CloudRpcAsync("friend_event_ack", new JsonObject { ["p_token"] = Token, ["p_id"] = id });
 
-    private async Task<JsonNode> FriendGetAsync(string path)
+    private async Task<JsonNode> CloudRpcAsync(string function, JsonObject args)
     {
-        using var req = new HttpRequestMessage(HttpMethod.Get, path);
-        ApplyAuth(req);
-        using var res = await _http.SendAsync(req);
-        string json = await res.Content.ReadAsStringAsync();
-        JsonNode root = JsonNode.Parse(json) ?? throw new ApiException("空响应");
-        if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized) throw new ApiException("unauthorized");
-        if (!res.IsSuccessStatusCode || root["ok"]?.GetValue<bool>() == false)
-            throw new ApiException(root["error"]?.GetValue<string>() ?? "friend_failed", root);
-        return root;
-    }
-
-    private async Task<JsonNode> FriendPostAsync(string path, JsonObject body)
-    {
-        using var req = new HttpRequestMessage(HttpMethod.Post, path)
+        string configPath = Path.Combine(AppContext.BaseDirectory, "cloud.json");
+        if (!File.Exists(configPath)) throw new ApiException("cloud_config_missing");
+        JsonNode cfg = JsonNode.Parse(await File.ReadAllTextAsync(configPath)) ?? throw new ApiException("cloud_config_bad");
+        string url = (cfg["url"]?.GetValue<string>() ?? "").TrimEnd('/').Replace("/rest/v1", "");
+        string key = cfg["key"]?.GetValue<string>() ?? "";
+        if (url.Length == 0 || key.Length == 0) throw new ApiException("cloud_config_bad");
+        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+        using var req = new HttpRequestMessage(HttpMethod.Post, url + "/rest/v1/rpc/" + function)
         {
-            Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json")
+            Content = new StringContent(args.ToJsonString(), Encoding.UTF8, "application/json")
         };
-        ApplyAuth(req);
-        using var res = await _http.SendAsync(req);
+        req.Headers.Add("apikey", key);
+        req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
+        using var res = await http.SendAsync(req);
         string json = await res.Content.ReadAsStringAsync();
-        JsonNode root = JsonNode.Parse(json) ?? throw new ApiException("空响应");
-        if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized) throw new ApiException("unauthorized");
+        JsonNode root;
+        try { root = JsonNode.Parse(json) ?? new JsonObject(); }
+        catch { throw new ApiException("cloud_bad_response"); }
+        if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized) throw new ApiException("unauthorized", root);
         if (!res.IsSuccessStatusCode || root["ok"]?.GetValue<bool>() == false)
-            throw new ApiException(root["error"]?.GetValue<string>() ?? "friend_failed", root);
+            throw new ApiException(root["error"]?.GetValue<string>() ?? root["message"]?.GetValue<string>() ?? "friend_failed", root);
         return root;
     }
 
