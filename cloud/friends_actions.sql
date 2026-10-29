@@ -354,11 +354,11 @@ begin
   v_state := jsonb_set(v_state, '{totals}',
     jsonb_set(coalesce(v_state->'totals', '{}'::jsonb),
       case when v_act.kind = 'outing' then '{outings}' else '{exercises}' end,
-      to_jsonb(coalesce((v_state->'totals'->>case when v_act.kind = 'outing' then 'outings' else 'exercises' end)::numeric, 0) + 1), true)), true);
+      to_jsonb(coalesce((v_state->'totals'->>case when v_act.kind = 'outing' then 'outings' else 'exercises' end)::numeric, 0) + 1), true), true);
   v_other_state := jsonb_set(v_other_state, '{totals}',
     jsonb_set(coalesce(v_other_state->'totals', '{}'::jsonb),
       case when v_act.kind = 'outing' then '{outings}' else '{exercises}' end,
-      to_jsonb(coalesce((v_other_state->'totals'->>case when v_act.kind = 'outing' then 'outings' else 'exercises' end)::numeric, 0) + 1), true)), true);
+      to_jsonb(coalesce((v_other_state->'totals'->>case when v_act.kind = 'outing' then 'outings' else 'exercises' end)::numeric, 0) + 1), true), true);
 
   if v_act.kind = 'outing' then
     v_state := jsonb_set(v_state, '{outingHistory}', jsonb_build_array(jsonb_build_object(
