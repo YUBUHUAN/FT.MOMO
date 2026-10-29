@@ -54,16 +54,16 @@ jobs:
       - name: Package portable zip
         shell: pwsh
         run: |
-          Compress-Archive -Path "dist/MomoPet-Windows-Portable/*" -DestinationPath "MomoPet-Windows-Portable-v1.7.1.0.zip" -CompressionLevel Optimal
-          Get-Item "MomoPet-Windows-Portable-v1.7.1.0.zip", "dist/MomoPet-Setup-1.7.1.0.exe" | Select-Object Name, Length
+          Compress-Archive -Path "dist/MomoPet-Windows-Portable/*" -DestinationPath "MomoPet-Windows-Portable-v1.7.1.1.zip" -CompressionLevel Optimal
+          Get-Item "MomoPet-Windows-Portable-v1.7.1.1.zip", "dist/MomoPet-Setup-1.7.1.1.exe" | Select-Object Name, Length
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-package
           path: |
-            MomoPet-Windows-Portable-v1.7.1.0.zip
-            dist/MomoPet-Setup-1.7.1.0.exe
+            MomoPet-Windows-Portable-v1.7.1.1.zip
+            dist/MomoPet-Setup-1.7.1.1.exe
           retention-days: 7
 
   release:
@@ -88,29 +88,29 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete v1.7.1.0 --yes 2>/dev/null || true
-          gh release create v1.7.1.0 android/release/MomoPet-Android-1.7.1.0.apk \
-            --title "墨墨桌宠 v1.7.1.0" \
-            --notes "1.7.1.0：密友页改为卡片流 + 横向票根倒计时；主页双人活动显示完整倒计时；双人活动期间禁止单人出游/运动；PC 好友接口继续直连 Supabase。" \
+          gh release delete v1.7.1.1 --yes 2>/dev/null || true
+          gh release create v1.7.1.1 android/release/MomoPet-Android-1.7.1.1.apk \
+            --title "墨墨桌宠 v1.7.1.1" \
+            --notes "1.7.1.1：密友页改为卡片流 + 横向票根倒计时；主页双人活动显示完整倒计时；双人活动期间禁止单人出游/运动；PC 好友接口继续直连 Supabase。" \
             --verify-tag --draft
 
       - name: Upload Windows setup
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          SETUP=$(find release-assets -name 'MomoPet-Setup-1.7.1.0.exe' -print -quit)
+          SETUP=$(find release-assets -name 'MomoPet-Setup-1.7.1.1.exe' -print -quit)
           echo "setup=$SETUP"
-          gh release upload v1.7.1.0 "$SETUP" --clobber
+          gh release upload v1.7.1.1 "$SETUP" --clobber
 
       - name: Upload portable zip
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          ZIP=$(find release-assets -name 'MomoPet-Windows-Portable-v1.7.1.0.zip' -print -quit)
+          ZIP=$(find release-assets -name 'MomoPet-Windows-Portable-v1.7.1.1.zip' -print -quit)
           echo "zip=$ZIP"
-          gh release upload v1.7.1.0 "$ZIP" --clobber
+          gh release upload v1.7.1.1 "$ZIP" --clobber
 
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release edit v1.7.1.0 --draft=false
+        run: gh release edit v1.7.1.1 --draft=false

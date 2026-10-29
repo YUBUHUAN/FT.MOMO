@@ -1,7 +1,7 @@
 Unicode true
 
 !define APP_NAME "墨墨桌宠"
-!define APP_VERSION "1.7.1.0"
+!define APP_VERSION "1.7.1.1"
 !define APP_PUBLISHER "MomoPet"
 !define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\MomoPet"
 
