@@ -534,6 +534,7 @@ grant execute on function public.friend_feed(text, text) to anon, authenticated;
 grant execute on function public.friend_activity_request(text, text, text) to anon, authenticated;
 grant execute on function public.friend_activity_respond(text, uuid, boolean) to anon, authenticated;
 grant execute on function public.friend_activity_cancel(text, uuid) to anon, authenticated;
+grant execute on function public.friend_history(text, int) to anon, authenticated;
 grant execute on function public.friend_events(text) to anon, authenticated;
 grant execute on function public.friend_event_ack(text, uuid) to anon, authenticated;
 
