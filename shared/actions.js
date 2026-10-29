@@ -25,7 +25,9 @@
         result = engine.applyFeed(state, content, a.itemId, a.optionId, now);
         break;
       case "outing_start":
-        result = engine.startOuting(state, content, a.placeId, a.minutes, now);
+        result = state.friendActivity && state.friendActivity.status === "active"
+          ? { ok: false, error: "friend_busy" }
+          : engine.startOuting(state, content, a.placeId, a.minutes, now);
         break;
       case "outing_finish":
         if (!state.outing) result = { ok: false, error: "not_away" };
@@ -35,7 +37,9 @@
         result = engine.markRecapSeen(state, now);
         break;
       case "exercise_start":
-        result = engine.startExercise(state, content, a.kindId, a.minutes, now);
+        result = state.friendActivity && state.friendActivity.status === "active"
+          ? { ok: false, error: "friend_busy" }
+          : engine.startExercise(state, content, a.kindId, a.minutes, now);
         break;
       case "exercise_finish":
         if (!state.exercise) result = { ok: false, error: "not_exercising" };

@@ -1957,7 +1957,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             body.Children.Clear();
-            body.Children.Add(Txt(ex.Message == "unauthorized" ? "登录已过期，请重新登录。" : "好友服务暂时不可用。", 11, "Muted", null, null, 0, 8));
+            body.Children.Add(Txt(ex.Message == "unauthorized" ? "登录已过期，请重新登录。" : $"好友服务不可用：{ex.Message}", 11, "Muted", null, null, 0, 8, true));
             return;
         }
 
@@ -2267,7 +2267,7 @@ public partial class MainWindow : Window
         // settings
         body.Children.Add(Card("小屋设置", "SETTINGS", BuildSettings()));
 
-        body.Children.Add(Txt("墨墨 v1.7.0.5 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
+        body.Children.Add(Txt("墨墨 v1.7.0.7 · 云同步 · 数据保存在 Supabase", 9, "Muted", null, null, 4, 8, false, TextAlignment.Center));
 
         OpenSheet("墨墨的手账", $"第 {days} 天 · 住在你的桌面上", body, null);
     }

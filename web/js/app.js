@@ -715,9 +715,15 @@ function maybeOfflineToast() {
 
 /* --------------------------------------------------------------- away */
 
+function friendActivity() {
+  const a = S.state && S.state.friendActivity;
+  return a && a.status === "active" ? a : null;
+}
+
 function renderAway() {
   const s = S.state;
-  if (!s || !s.outing) {
+  const fa = friendActivity();
+  if (!s || (!s.outing && !fa)) {
     els.awayCard.classList.add("hidden");
     document.body.classList.remove("is-away");
     clearInterval(S.awayTimer);
@@ -725,15 +731,24 @@ function renderAway() {
     S.awayFinishing = false;
     return;
   }
-  const outing = s.outing;
   els.awayCard.classList.remove("hidden");
   document.body.classList.add("is-away");
   S.bubble.hide();
-  els.awayEmoji.textContent = outing.emoji || "🌳";
-  els.awayTitle.textContent = `去${outing.name}走走`;
-  els.awayNote.textContent = "不用等她，她会自己看时间。回来时会带一点小东西。";
-  els.awayScene.className = `away-scene scene-${outing.scene || "park"}`;
-  els.awayScene.dataset.place = outing.placeId || "park";
+  if (fa) {
+    const exercise = fa.kind === "exercise";
+    els.awayEmoji.textContent = exercise ? "🏸" : "🌳";
+    els.awayTitle.textContent = `和【${fa.partner || "密友"}】${exercise ? "一起运动" : "一起出游"}`;
+    els.awayNote.textContent = `${fa.option || ""} · 固定 30 分钟，回来时会带一张合照。`;
+    els.awayScene.className = "away-scene scene-park";
+    els.awayScene.dataset.place = "park";
+  } else {
+    const outing = s.outing;
+    els.awayEmoji.textContent = outing.emoji || "🌳";
+    els.awayTitle.textContent = `去${outing.name}走走`;
+    els.awayNote.textContent = "不用等她，她会自己看时间。回来时会带一点小东西。";
+    els.awayScene.className = `away-scene scene-${outing.scene || "park"}`;
+    els.awayScene.dataset.place = outing.placeId || "park";
+  }
   updateAwayCount();
   clearInterval(S.awayTimer);
   S.awayTimer = setInterval(updateAwayCount, 1000);
@@ -741,8 +756,10 @@ function renderAway() {
 
 function updateAwayCount() {
   const s = S.state;
-  if (!s || !s.outing) return;
-  const left = s.outing.endsAt - Date.now();
+  const fa = friendActivity();
+  const endsAt = fa ? Date.parse(fa.endsAt) : (s && s.outing ? s.outing.endsAt : null);
+  if (!endsAt) return;
+  const left = endsAt - Date.now();
   els.awayCount.textContent = fmtClock(Math.max(0, left));
   if (left <= 0 && !S.awayFinishing) {
     S.awayFinishing = true;
@@ -755,13 +772,11 @@ function updateAwayCount() {
 async function finishAway() {
   if (!S.api) return;
   try {
+    if (friendActivity()) await S.api.friendEvents().catch(() => null);
     const state = await S.api.state();
     applyState(state);
     S.awayFinishing = false;
-    if (state.outing) {
-      // clock skew: check again a little later
-      S.awayTimer = setInterval(updateAwayCount, 1000);
-    }
+    if (state.outing || friendActivity()) S.awayTimer = setInterval(updateAwayCount, 1000);
   } catch (_) {
     S.awayFinishing = false;
     S.awayTimer = setInterval(updateAwayCount, 1000);
@@ -769,7 +784,14 @@ async function finishAway() {
 }
 
 function peekAway() {
-  if (!S.state || !S.state.outing) return;
+  if (!S.state) return;
+  if (friendActivity()) {
+    const fa = friendActivity();
+    S.bubble.show(`【${fa.partner || "密友"}】在${fa.option || "那边"}等你。`, { duration: 3800 });
+    S.sfx.play("open");
+    return;
+  }
+  if (!S.state.outing) return;
   const outing = S.state.outing;
   const place = C.OUTINGS.find((p) => p.id === outing.placeId);
   const line = pick((place && place.peek) || [
@@ -782,7 +804,24 @@ function peekAway() {
 }
 
 function askEarlyBack() {
-  if (!S.state || !S.state.outing) return;
+  if (!S.state) return;
+  const fa = friendActivity();
+  if (fa) {
+    confirmDialog({
+      kicker: "END TOGETHER",
+      title: "要提前结束吗？",
+      text: "现在结束，两个人都回到房间。今天这次双人活动仍然记一次。",
+      okText: "结束活动",
+      cancelText: "再等等",
+      onOk: async () => {
+        try { await S.api.friendActivityCancel(fa.id); toast("已结束"); }
+        catch (_) { toast("操作失败", 2200); }
+      }
+    });
+    return;
+  }
+  if (!S.state.outing) return;
+  const outing = S.state.outing;
   confirmDialog({
     kicker: "EARLY BACK",
     title: "要提前回来吗？",

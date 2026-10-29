@@ -166,38 +166,53 @@ public sealed class ApiClient
         }
     }
 
+    private string FriendToken
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(Token)) return Token;
+            try
+            {
+                var saved = SettingsStore.Load();
+                if (!string.IsNullOrWhiteSpace(saved.Token)) return saved.Token;
+            }
+            catch { }
+            return Token;
+        }
+    }
+
     public Task<JsonNode> FriendCodeAsync()
-        => CloudRpcAsync("friend_code_for", new JsonObject { ["p_token"] = Token });
+        => CloudRpcAsync("friend_code_for", new JsonObject { ["p_token"] = FriendToken });
 
     public Task<JsonNode> FriendPendingAsync()
-        => CloudRpcAsync("friend_pending", new JsonObject { ["p_token"] = Token });
+        => CloudRpcAsync("friend_pending", new JsonObject { ["p_token"] = FriendToken });
 
     public Task<JsonNode> FriendStatusAsync()
-        => CloudRpcAsync("friend_status", new JsonObject { ["p_token"] = Token });
+        => CloudRpcAsync("friend_status", new JsonObject { ["p_token"] = FriendToken });
 
     public Task<JsonNode> FriendRequestAsync(string code)
-        => CloudRpcAsync("friend_request", new JsonObject { ["p_token"] = Token, ["p_code"] = code });
+        => CloudRpcAsync("friend_request", new JsonObject { ["p_token"] = FriendToken, ["p_code"] = code });
 
     public Task<JsonNode> FriendUnbindAsync()
-        => CloudRpcAsync("friend_unbind", new JsonObject { ["p_token"] = Token });
+        => CloudRpcAsync("friend_unbind", new JsonObject { ["p_token"] = FriendToken });
 
     public Task<JsonNode> FriendFeedAsync(string foodId)
-        => CloudRpcAsync("friend_feed", new JsonObject { ["p_token"] = Token, ["p_food_id"] = foodId });
+        => CloudRpcAsync("friend_feed", new JsonObject { ["p_token"] = FriendToken, ["p_food_id"] = foodId });
 
     public Task<JsonNode> FriendActivityRequestAsync(string kind, string option)
-        => CloudRpcAsync("friend_activity_request", new JsonObject { ["p_token"] = Token, ["p_kind"] = kind, ["p_option"] = option });
+        => CloudRpcAsync("friend_activity_request", new JsonObject { ["p_token"] = FriendToken, ["p_kind"] = kind, ["p_option"] = option });
 
     public Task<JsonNode> FriendActivityRespondAsync(string id, bool accept)
-        => CloudRpcAsync("friend_activity_respond", new JsonObject { ["p_token"] = Token, ["p_id"] = id, ["p_accept"] = accept });
+        => CloudRpcAsync("friend_activity_respond", new JsonObject { ["p_token"] = FriendToken, ["p_id"] = id, ["p_accept"] = accept });
 
     public Task<JsonNode> FriendActivityCancelAsync(string id)
-        => CloudRpcAsync("friend_activity_cancel", new JsonObject { ["p_token"] = Token, ["p_id"] = id });
+        => CloudRpcAsync("friend_activity_cancel", new JsonObject { ["p_token"] = FriendToken, ["p_id"] = id });
 
     public Task<JsonNode> FriendEventsAsync()
-        => CloudRpcAsync("friend_events", new JsonObject { ["p_token"] = Token });
+        => CloudRpcAsync("friend_events", new JsonObject { ["p_token"] = FriendToken });
 
     public Task<JsonNode> FriendEventAckAsync(string id)
-        => CloudRpcAsync("friend_event_ack", new JsonObject { ["p_token"] = Token, ["p_id"] = id });
+        => CloudRpcAsync("friend_event_ack", new JsonObject { ["p_token"] = FriendToken, ["p_id"] = id });
 
     private async Task<JsonNode> CloudRpcAsync(string function, JsonObject args)
     {
@@ -213,7 +228,7 @@ public sealed class ApiClient
             Content = new StringContent(args.ToJsonString(), Encoding.UTF8, "application/json")
         };
         req.Headers.Add("apikey", key);
-        req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
+        req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", key);
         using var res = await http.SendAsync(req);
         string json = await res.Content.ReadAsStringAsync();
         JsonNode root;
