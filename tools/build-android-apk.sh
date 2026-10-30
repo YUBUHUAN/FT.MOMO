@@ -9,7 +9,7 @@ if command -v cygpath >/dev/null 2>&1; then
 fi
 SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
 JAVA="${JAVA_HOME:-}"
-VERSION="1.7.1.1"
+VERSION="1.8.0"
 APK="$ROOT/dist/MomoPet-Android-$VERSION.apk"
 
 if [ -z "$SDK" ] || [ ! -d "$SDK" ]; then
@@ -28,10 +28,9 @@ BT="$SDK/build-tools/35.0.0"
 PLATFORM="$SDK/platforms/android-35/android.jar"
 AAPT2="$BT/aapt2"
 [ -x "$AAPT2" ] || AAPT2="$BT/aapt2.exe"
-D8="$BT/d8"
-[ -x "$D8" ] || D8="$BT/d8.bat"
+D8_JAR="$BT/lib/d8.jar"
 
-for f in "$AAPT2" "$D8" "$BT/zipalign" "$BT/zipalign.exe" "$BT/apksigner" "$BT/apksigner.bat"; do
+for f in "$AAPT2" "$BT/zipalign" "$BT/zipalign.exe" "$BT/apksigner" "$BT/apksigner.bat"; do
   [ -e "$f" ] || true
 done
 
@@ -51,14 +50,14 @@ cp "$ROOT/android/cloud-config.js" "$ROOT/android/assets/web/js/cloud-config.js"
   --java "$ROOT/android/build/gen" \
   --auto-add-overlay
 
-find "$ROOT/android/src" "$ROOT/android/build/gen" -name '*.java' > "$ROOT/android/build/sources.txt"
+( cd "$ROOT" && find android/src android/build/gen -name '*.java' -print ) > "$ROOT/android/build/sources.txt"
 "$JAVA/bin/javac" -encoding UTF-8 -source 17 -target 17 \
   -classpath "$PLATFORM" \
   -d "$ROOT/android/build/classes" \
   @"$ROOT/android/build/sources.txt"
 
 (cd "$ROOT/android/build/classes" && "$JAVA/bin/jar" cf ../classes.jar .)
-"$D8" --lib "$PLATFORM" --min-api 24 --output "$ROOT/android/build/dex" "$ROOT/android/build/classes.jar"
+"$JAVA/bin/java" -cp "$D8_JAR" com.android.tools.r8.D8 --lib "$PLATFORM" --min-api 24 --output "$ROOT/android/build/dex" "$ROOT/android/build/classes.jar"
 
 cp "$ROOT/android/build/unsigned.apk" "$ROOT/android/build/app.apk"
 (cd "$ROOT/android/build/dex" && "$JAVA/bin/jar" uf ../app.apk classes.dex)
@@ -77,12 +76,13 @@ if [ ! -f "$KEYSTORE" ]; then
     -dname "CN=MomoPet, OU=MomoPet, O=MomoPet, L=Local, ST=Local, C=CN" >/dev/null
 fi
 
-APKSIGNER="$BT/apksigner"
-[ -x "$APKSIGNER" ] || APKSIGNER="$BT/apksigner.bat"
-"$APKSIGNER" sign --ks "$KEYSTORE" \
+APKSIGNER_JAR="$BT/lib/apksigner.jar"
+SIGNED="$ROOT/android/build/signed-$VERSION.apk"
+"$JAVA/bin/java" -jar "$APKSIGNER_JAR" sign --ks "$KEYSTORE" \
   --ks-pass pass:momopet123 --key-pass pass:momopet123 \
-  --out "$APK" "$ROOT/android/build/aligned.apk"
-"$APKSIGNER" verify "$APK"
+  --out "$SIGNED" "$ROOT/android/build/aligned.apk"
+"$JAVA/bin/java" -jar "$APKSIGNER_JAR" verify "$SIGNED"
+cp "$SIGNED" "$APK"
 
 echo "built $APK"
 "$AAPT2" dump badging "$APK" | head -4

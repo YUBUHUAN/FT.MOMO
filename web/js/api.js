@@ -112,6 +112,57 @@ async function cloudRpc(name, args, timeout = 15000) {
   }
 }
 
+function letterFailure(body, status, fallback = "letter_failed") {
+  const code = (body && typeof body === "object" && (body.error || body.code)) || fallback;
+  const err = new Error(String(code));
+  err.code = String(code);
+  err.status = Number(status) || 0;
+  err.body = body && typeof body === "object" ? body : null;
+  if (err.status === 401 || err.code === "unauthorized") err.needsAuth = true;
+  return err;
+}
+
+async function cloudLetterRpc(name, args) {
+  try {
+    const body = await cloudRpc(name, args);
+    if (!body || body.ok === false) {
+      throw letterFailure(body, 200, "letter_failed");
+    }
+    return body;
+  } catch (err) {
+    if (err && err.needsAuth) {
+      if (!err.code) err.code = "unauthorized";
+      if (!("body" in err)) err.body = null;
+      throw err;
+    }
+    if (err && err.offline) {
+      if (!err.code) err.code = err.message === "cloud_timeout" ? "cloud_timeout" : "cloud_network";
+      err.status = Number(err.status) || 0;
+      if (!("body" in err)) err.body = null;
+      throw err;
+    }
+    const status = Number(err && err.status) || 0;
+    if (status === 408) {
+      const timeout = letterFailure({ error: "cloud_timeout" }, 408, "cloud_timeout");
+      timeout.offline = true;
+      throw timeout;
+    }
+    if (status === 403) throw letterFailure({ error: "forbidden" }, 403, "forbidden");
+    if (status === 404) throw letterFailure({ error: "not_found" }, 404, "not_found");
+    if (status === 409) throw letterFailure({ error: "conflict" }, 409, "conflict");
+    if (status === 429) throw letterFailure({ error: "rate_limited" }, 429, "rate_limited");
+    if (status >= 400 && status < 500) {
+      throw letterFailure({ error: "bad_request" }, status, "bad_request");
+    }
+    if (status >= 500) {
+      const offline = letterFailure({ error: "cloud_offline" }, 503, "cloud_offline");
+      offline.offline = true;
+      throw offline;
+    }
+    throw err;
+  }
+}
+
 class LocalApi {
   constructor(token, account, bootstrap, options = {}) {
     this.token = token;
@@ -346,6 +397,120 @@ class LocalApi {
     if (!body) throw Object.assign(new Error("network"), { offline: true });
     if (!res.ok || body.ok === false) throw Object.assign(new Error(body.error || "friend_failed"), { status: res.status, body });
     return body;
+  }
+
+  async _letterFetch(path, options = {}) {
+    let result;
+    try {
+      result = await fetchJson(path, options);
+    } catch (err) {
+      if (err && err.name === "AbortError") {
+        const timeout = letterFailure({ error: "cloud_timeout" }, 0, "cloud_timeout");
+        timeout.offline = true;
+        throw timeout;
+      }
+      if (err && err.offline) throw err;
+      const network = letterFailure({ error: "network" }, 0, "network");
+      network.offline = true;
+      throw network;
+    }
+    const { res, body } = result;
+    if (res.status === 401) {
+      LocalApi.clearAuth();
+      const unauthorized = letterFailure({ error: "unauthorized" }, 401);
+      unauthorized.needsAuth = true;
+      throw unauthorized;
+    }
+    if (res.status === 408) {
+      const timeout = letterFailure({ error: "cloud_timeout" }, 408, "cloud_timeout");
+      timeout.offline = true;
+      throw timeout;
+    }
+    if (res.status >= 500) {
+      const code = body && body.error === "cloud_timeout" ? "cloud_timeout" : "cloud_offline";
+      const offline = letterFailure({ error: code }, res.status, code);
+      offline.offline = true;
+      throw offline;
+    }
+    if (!body) {
+      const offline = letterFailure({ error: "cloud_offline" }, 0, "network");
+      offline.offline = true;
+      throw offline;
+    }
+    if (res.status >= 400) {
+      const fallback = res.status === 429 ? "rate_limited"
+        : res.status === 403 ? "forbidden"
+        : res.status === 404 ? "not_found"
+        : res.status === 409 ? "conflict"
+        : "bad_request";
+      if (body.ok === false) {
+        const failure = letterFailure(body, res.status, fallback);
+        if (failure.needsAuth) LocalApi.clearAuth();
+        throw failure;
+      }
+      throw letterFailure({ error: fallback }, res.status, fallback);
+    }
+    if (body.ok === false) {
+      const failure = letterFailure(body, res.status);
+      if (failure.needsAuth) LocalApi.clearAuth();
+      throw failure;
+    }
+    return body;
+  }
+
+  async letterSend(style, body, paperStyle, envelopeStyle, sticker, replyTo, clientToken) {
+    if (!clientToken) throw letterFailure({ error: "bad_client_token" }, 400, "bad_client_token");
+    return this._letterFetch("/api/friend/letters/send", {
+      method: "POST",
+      headers: authHeaders(this.token, { "content-type": "application/json" }),
+      body: JSON.stringify({
+        style,
+        body,
+        paperStyle,
+        envelopeStyle,
+        sticker: sticker || null,
+        replyTo: replyTo || null,
+        clientToken
+      })
+    });
+  }
+
+  async letterList(box = "inbox", limit = 20, before = null, beforeId = null) {
+    if (!!before !== !!beforeId) throw letterFailure({ error: "bad_cursor" }, 400, "bad_cursor");
+    const params = new URLSearchParams({ box: box || "inbox", limit: String(limit == null ? 20 : limit) });
+    if (before) params.set("before", before);
+    if (beforeId) params.set("beforeId", beforeId);
+    return this._letterFetch(`/api/friend/letters/list?${params.toString()}`, {
+      headers: authHeaders(this.token)
+    });
+  }
+
+  async letterGet(id) {
+    return this._letterFetch(`/api/friend/letters/get?id=${encodeURIComponent(id)}`, {
+      headers: authHeaders(this.token)
+    });
+  }
+
+  async letterRead(id) {
+    return this._letterFetch("/api/friend/letters/read", {
+      method: "POST",
+      headers: authHeaders(this.token, { "content-type": "application/json" }),
+      body: JSON.stringify({ id })
+    });
+  }
+
+  async letterReact(id, kind) {
+    return this._letterFetch("/api/friend/letters/react", {
+      method: "POST",
+      headers: authHeaders(this.token, { "content-type": "application/json" }),
+      body: JSON.stringify({ id, kind })
+    });
+  }
+
+  async letterUnread() {
+    return this._letterFetch("/api/friend/letters/unread", {
+      headers: authHeaders(this.token)
+    });
   }
 
   async heartbeat(visible) {
@@ -586,7 +751,16 @@ class CloudApi {
   }
 
   async friendUnbind() {
-    return cloudRpc("friend_unbind", { p_token: this.token });
+    const body = await cloudRpc("friend_unbind", { p_token: this.token });
+    if (!body || body.ok === false) {
+      const code = (body && (body.error || body.code)) || "friend_failed";
+      throw Object.assign(new Error(code), {
+        code,
+        status: 200,
+        body: body || null
+      });
+    }
+    return body;
   }
 
   async friendFeed(foodId) {
@@ -615,6 +789,47 @@ class CloudApi {
 
   async friendEventAck(id) {
     return cloudRpc("friend_event_ack", { p_token: this.token, p_id: id });
+  }
+
+  async letterSend(style, body, paperStyle, envelopeStyle, sticker, replyTo, clientToken) {
+    if (!clientToken) throw letterFailure({ error: "bad_client_token" }, 400, "bad_client_token");
+    return cloudLetterRpc("friend_letter_send", {
+      p_token: this.token,
+      p_style: style,
+      p_body: body,
+      p_paper_style: paperStyle,
+      p_envelope_style: envelopeStyle,
+      p_sticker: sticker || null,
+      p_reply_to: replyTo || null,
+      p_client_token: clientToken
+    });
+  }
+
+  async letterList(box = "inbox", limit = 20, before = null, beforeId = null) {
+    if (!!before !== !!beforeId) throw letterFailure({ error: "bad_cursor" }, 400, "bad_cursor");
+    return cloudLetterRpc("friend_letter_list", {
+      p_token: this.token,
+      p_box: box || "inbox",
+      p_limit: limit == null ? 20 : limit,
+      p_before: before || null,
+      p_before_id: beforeId || null
+    });
+  }
+
+  async letterGet(id) {
+    return cloudLetterRpc("friend_letter_get", { p_token: this.token, p_id: id });
+  }
+
+  async letterRead(id) {
+    return cloudLetterRpc("friend_letter_read", { p_token: this.token, p_id: id });
+  }
+
+  async letterReact(id, kind) {
+    return cloudLetterRpc("friend_letter_react", { p_token: this.token, p_id: id, p_kind: kind });
+  }
+
+  async letterUnread() {
+    return cloudLetterRpc("friend_letter_unread", { p_token: this.token });
   }
 
   async heartbeat(visible) {

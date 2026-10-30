@@ -1,6 +1,6 @@
 param(
   [string]$Portable = "dist\MomoPet-Windows-Portable",
-  [string]$Version = "1.7.1.1"
+  [string]$Version = "1.8.0"
 )
 
 $ErrorActionPreference = "Stop"

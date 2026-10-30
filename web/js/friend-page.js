@@ -1,5 +1,6 @@
 /* Dedicated friend page: compact card layout + ticket countdown. */
 import { Api } from "./api.js";
+import { LetterUI } from "./letters.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const esc = (value) => String(value == null ? "" : value).replace(/[&<>"']/g, (ch) => ({
@@ -14,10 +15,11 @@ const clock = (ms) => {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 };
 
-const S = { api: null, code: "", friend: null, activity: null, events: [], logs: [], historyTab: "outing", tick: null, busy: false };
+const S = { api: null, view: "friend", code: "", friend: null, activity: null, events: [], logs: [], historyTab: "outing", tick: null, busy: false };
 const root = $("#friendRoot");
 const toastEl = $("#fbToast");
 const modal = $("#fbModal");
+const tabs = Array.from(document.querySelectorAll("[data-view]"));
 
 function toast(message) {
   if (!toastEl) return;
@@ -38,7 +40,35 @@ async function boot() {
     root.innerHTML = `<div class="fb-card fb-empty">好友服务暂时连不上。<br>稍后再试。</div>`;
     return false;
   }
+  LetterUI.init(S.api);
   return true;
+}
+
+function setTabUI(view) {
+  for (const tab of tabs) {
+    const active = tab.dataset.view === view;
+    tab.classList.toggle("on", active);
+    tab.setAttribute("aria-selected", active ? "true" : "false");
+  }
+}
+
+async function switchView(view) {
+  if (view !== "friend" && view !== "letters") return;
+  S.view = view;
+  setTabUI(view);
+  if (view === "letters") {
+    LetterUI.setLinked(!!(S.friend && S.friend.linked));
+    await LetterUI.enter(root, { api: S.api, linked: !!(S.friend && S.friend.linked) });
+    return;
+  }
+  render();
+}
+
+function bindTabs() {
+  for (const tab of tabs) {
+    tab.addEventListener("click", () => { switchView(tab.dataset.view); });
+  }
+  setTabUI(S.view);
 }
 
 async function load() {
@@ -56,10 +86,18 @@ async function load() {
     S.activity = events && events.activity ? events.activity : null;
     S.events = events && events.events ? events.events : [];
     S.logs = history && history.logs ? history.logs : [];
-    render();
+    LetterUI.setLinked(!!(S.friend && S.friend.linked));
+    LetterUI.refreshUnread().catch(() => {});
+    if (S.view === "friend") render();
     handleEvents();
-  } catch (_) {
-    root.innerHTML = `<div class="fb-card fb-empty">好友服务暂时不可用。<br>请稍后再试。</div>`;
+  } catch (err) {
+    if (err && err.needsAuth) {
+      location.replace("/");
+      return;
+    }
+    if (S.view === "friend") {
+      root.innerHTML = `<div class="fb-card fb-empty">好友服务暂时不可用。<br>请稍后再试。</div>`;
+    }
   } finally {
     S.busy = false;
   }
@@ -163,6 +201,7 @@ function historySection() {
 }
 
 function render() {
+  if (S.view === "letters") return;
   if (!S.friend) return;
   const linked = S.friend.linked;
   let html = friendCard();
@@ -316,6 +355,7 @@ $("#fbBack")?.addEventListener("click", () => {
 });
 
 if (await boot()) {
+  bindTabs();
   await load();
   setInterval(() => { if (!document.hidden) load(); }, 5000);
 }

@@ -38,3 +38,8 @@ Thumbs.db
 
 tmp/
 wowo-src/
+
+# local release artefacts / downloaded tooling
+backups/
+tools/postgresql-17.11/
+tools/postgresql-17.11-*.zip

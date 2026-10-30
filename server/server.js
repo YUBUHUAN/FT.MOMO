@@ -364,6 +364,30 @@ function createServer(opts = {}) {
     return send(res, 503, { ok: false, error: "cloud_offline" });
   }
 
+  function letterCloudFailure(res, err) {
+    if (err instanceof CloudError) {
+      const status = Number(err.status) || 0;
+      if (status === 401) return send(res, 401, { ok: false, error: "unauthorized" });
+      if (status === 408) return send(res, 503, { ok: false, error: "cloud_timeout" });
+      if (!status || status >= 500) {
+        return send(res, 503, { ok: false, error: "cloud_offline" });
+      }
+      if (status === 400 || status === 422) {
+        return send(res, 400, { ok: false, error: "bad_request" });
+      }
+      if (status === 403) return send(res, 403, { ok: false, error: "forbidden" });
+      if (status === 404) return send(res, 404, { ok: false, error: "not_found" });
+      if (status === 409) return send(res, 409, { ok: false, error: "conflict" });
+      if (status === 429) return send(res, 429, { ok: false, error: "rate_limited" });
+      if (status >= 400 && status < 500) {
+        return send(res, status, { ok: false, error: "bad_request" });
+      }
+      return send(res, 503, { ok: false, error: "cloud_offline" });
+    }
+    console.error("[momo] letter cloud error", err);
+    return send(res, 503, { ok: false, error: "cloud_offline" });
+  }
+
   function authRequired(res) {
     return send(res, 401, { ok: false, error: "unauthorized" });
   }
@@ -808,6 +832,70 @@ data: ${JSON.stringify({ state, now: new Date().toISOString() })}
       if (!cloud) return send(res, 200, { ok: true });
       try { const body = await readBody(req); return send(res, 200, await cloud.friendEventAck(session.token, String(body.id || ""))); }
       catch (err) { return cloudFailure(res, err); }
+    }
+    if (pathname === "/api/friend/letters/list" && req.method === "GET") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      const before = url.searchParams.get("before") || null;
+      const beforeId = url.searchParams.get("beforeId") || null;
+      if (!!before !== !!beforeId) return send(res, 400, { ok: false, error: "bad_cursor" });
+      if (!cloud) return send(res, 200, { ok: false, error: "cloud_required" });
+      try {
+        return send(res, 200, await cloud.letterList(
+          session.token,
+          String(url.searchParams.get("box") || "inbox"),
+          Number(url.searchParams.get("limit") || 20),
+          before,
+          beforeId
+        ));
+      } catch (err) { return letterCloudFailure(res, err); }
+    }
+    if (pathname === "/api/friend/letters/get" && req.method === "GET") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: false, error: "cloud_required" });
+      try { return send(res, 200, await cloud.letterGet(session.token, String(url.searchParams.get("id") || ""))); }
+      catch (err) { return letterCloudFailure(res, err); }
+    }
+    if (pathname === "/api/friend/letters/unread" && req.method === "GET") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: false, error: "cloud_required" });
+      try { return send(res, 200, await cloud.letterUnread(session.token)); }
+      catch (err) { return letterCloudFailure(res, err); }
+    }
+    if (pathname === "/api/friend/letters/send" && req.method === "POST") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: false, error: "cloud_required" });
+      try {
+        const body = await readBody(req);
+        if (!body.clientToken) return send(res, 400, { ok: false, error: "bad_client_token" });
+        return send(res, 200, await cloud.letterSend(
+          session.token,
+          String(body.style || ""),
+          String(body.body || ""),
+          String(body.paperStyle || ""),
+          String(body.envelopeStyle || ""),
+          body.sticker ? String(body.sticker) : null,
+          body.replyTo ? String(body.replyTo) : null,
+          String(body.clientToken)
+        ));
+      } catch (err) { return letterCloudFailure(res, err); }
+    }
+    if (pathname === "/api/friend/letters/read" && req.method === "POST") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: false, error: "cloud_required" });
+      try { const body = await readBody(req); return send(res, 200, await cloud.letterRead(session.token, String(body.id || ""))); }
+      catch (err) { return letterCloudFailure(res, err); }
+    }
+    if (pathname === "/api/friend/letters/react" && req.method === "POST") {
+      const session = await authenticate(req, url);
+      if (!session) return authRequired(res);
+      if (!cloud) return send(res, 200, { ok: false, error: "cloud_required" });
+      try { const body = await readBody(req); return send(res, 200, await cloud.letterReact(session.token, String(body.id || ""), String(body.kind || ""))); }
+      catch (err) { return letterCloudFailure(res, err); }
     }
     if (pathname === "/api/action" && req.method === "POST") {
       const session = await authenticate(req, url);

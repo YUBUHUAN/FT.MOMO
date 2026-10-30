@@ -8,6 +8,7 @@
   <link rel="icon" href="/assets/icon-192.png" type="image/png">
   <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/friend.css">
+  <link rel="stylesheet" href="/css/letters.css">
 </head>
 <body class="friend-page">
   <div class="friend-bg" aria-hidden="true"></div>
@@ -16,6 +17,10 @@
     <div class="fb-title"><span>密友手帐</span><small>BOND · MOMO</small></div>
     <span class="fb-bond">BOND</span>
   </header>
+  <nav class="fb-tabs" id="fbTabs" role="tablist" aria-label="密友页面">
+    <button class="fb-tab on" type="button" role="tab" aria-selected="true" data-view="friend">手帐</button>
+    <button class="fb-tab" type="button" role="tab" aria-selected="false" data-view="letters">邮局<span class="fb-letter-badge hidden" id="fbLetterBadge"></span></button>
+  </nav>
   <main id="friendRoot" class="fb-main" aria-live="polite"></main>
   <div id="fbToast" class="fb-toast" hidden></div>
   <div id="fbModal" class="fb-modal" hidden></div>
