@@ -197,6 +197,11 @@ class LocalApi {
     localStorage.removeItem(LS_STATE);
   }
 
+  static clearAuthOnly() {
+    localStorage.removeItem(LS_TOKEN);
+    localStorage.removeItem(LS_ACCOUNT);
+  }
+
   static async bootstrap() {
     try {
       const { res, body } = await fetchJson("/api/bootstrap", {}, 6000);
@@ -609,6 +614,11 @@ class CloudApi {
     localStorage.removeItem(LS_STATE);
   }
 
+  static clearAuthOnly() {
+    localStorage.removeItem(LS_TOKEN);
+    localStorage.removeItem(LS_ACCOUNT);
+  }
+
   static cachedState() {
     return readJson(LS_STATE);
   }
@@ -645,7 +655,7 @@ class CloudApi {
     try {
       const me = await cloudRpc("momo_me", { p_token: token }, 10000);
       if (!me || me.ok === false) {
-        CloudApi.clearAuth();
+        CloudApi.clearAuthOnly();
         throw Object.assign(new Error("needs_auth"), { needsAuth: true, bootstrap });
       }
       const fetched = await CloudApi.fetchState(token);
@@ -654,7 +664,10 @@ class CloudApi {
         rev: fetched.rev
       });
     } catch (err) {
-      if (err && err.needsAuth) throw err;
+      if (err && err.needsAuth) {
+        CloudApi.clearAuthOnly();
+        throw err;
+      }
       const cached = readJson(LS_STATE);
       if (cached) {
         return new CloudApi(token, account, bootstrap, { offline: true, cached, state: cached });
@@ -859,6 +872,7 @@ class CloudApi {
         if (err && err.needsAuth) {
           if (handlers.onStatus) handlers.onStatus(false);
           this.disconnect();
+          if (handlers.onAuthRequired) handlers.onAuthRequired();
           return;
         }
         this.offline = true;

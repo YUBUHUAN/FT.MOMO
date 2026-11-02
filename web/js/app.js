@@ -54,6 +54,7 @@ const S = {
   menuOpen: false,
   pending: false,
   retryTimer: null,
+  authExpired: false,
   lastOfflineToast: 0
 };
 
@@ -363,7 +364,8 @@ function wireApi() {
   const api = S.api;
   api.connect({
     onState: onLiveState,
-    onStatus: setConnected
+    onStatus: setConnected,
+    onAuthRequired: handleAuthFailure
   });
 }
 
@@ -395,15 +397,30 @@ function startRetry() {
     try {
       const state = await S.api.state();
       S.api.offline = false;
-      S.api.connect({ onState: onLiveState, onStatus: setConnected });
+      S.api.connect({ onState: onLiveState, onStatus: setConnected, onAuthRequired: handleAuthFailure });
       applyState(state);
       startTimers();
       clearInterval(S.retryTimer);
       toast("又连上啦", 1600);
-    } catch (_) {
+    } catch (err) {
+      if (err && err.needsAuth) {
+        handleAuthFailure();
+        return;
+      }
       /* keep trying quietly */
     }
   }, 9000);
+}
+
+function handleAuthFailure() {
+  if (S.authExpired) return;
+  S.authExpired = true;
+  if (S.api && typeof S.api.disconnect === "function") S.api.disconnect();
+  Api.clearAuthOnly();
+  clearInterval(S.retryTimer);
+  S.retryTimer = null;
+  setConnected(false);
+  showAuth(S.bootstrap);
 }
 
 function showAuth(bootstrap) {
@@ -1181,6 +1198,7 @@ async function submitAuth() {
       return;
     }
     S.api = api;
+    S.authExpired = false;
     const state = await api.state();
     els.auth.classList.add("hidden");
     applyState(state, false);
